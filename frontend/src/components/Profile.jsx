@@ -7,7 +7,7 @@ import EditProfile from "./EditProfile";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 const PROFILE_PLACEHOLDER = "https://via.placeholder.com/160";
 
-export default function Profile(user, onProfileLoader) {
+export default function Profile({user, onProfileLoader}) {
   const [showModal, setShowModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [productoEdit, setProductoEdit] = useState(null);
@@ -19,9 +19,10 @@ export default function Profile(user, onProfileLoader) {
     const stored = localStorage.getItem("user");
     return stored ? JSON.parse(stored) : null;
   });
-    const [loadingProfile, setLoadingProfile] = useState(true);
+  const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingProductos, setLoadingProductos] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
    const fetchProductos = useCallback(async (emprendimientoId) => {
     setLoadingProductos(true);
