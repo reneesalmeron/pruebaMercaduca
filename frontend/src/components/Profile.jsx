@@ -3,17 +3,24 @@ import { useNavigate } from "react-router-dom";
 import ProductCard from "./Card";
 import ProductForm from "./ProductForm";
 import EditProfile from "./EditProfile";
+import EntrepreneurshipForm from "./EntrepreneurshipForm";
 import logoVerde from "../images/logoVerde.png";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 const PROFILE_PLACEHOLDER = logoVerde;
 
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export default function Profile({ user, onProfileLoaded }) {
   const [showModal, setShowModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [productoEdit, setProductoEdit] = useState(null);
-
+  const [showEntrepreneurshipModal, setShowEntrepreneurshipModal] = useState(false);
+  const [savingEntrepreneurship, setSavingEntrepreneurship] = useState(false);
   const [emprendimiento, setEmprendimiento] = useState({});
   const [productos, setProductos] = useState([]);
   const [currentUser, setCurrentUser] = useState(() => {
@@ -50,11 +57,27 @@ export default function Profile({ user, onProfileLoaded }) {
     categoria: producto?.categoria ?? producto?.Categoria,
   });
 
+  const normalizeEmprendimiento = (data = {}) => ({
+    id_emprendimiento:
+      data.id_emprendimiento || data.id || data.idEmprendimiento || null,
+    nombre: data.nombre || data.Nombre || "",
+    descripcion: data.descripcion || data.Descripcion || "",
+    imagen_url: data.imagen_url || data.Imagen_URL || data.imagen || "",
+    instagram: data.instagram || data.Instagram || "",
+    disponible: data.disponible ?? data.Disponible ?? true,
+    id_categoria: data.id_categoria || data.idCategoria || null,
+  });
+
   const fetchProductos = useCallback(async (emprendimientoId) => {
     setLoadingProductos(true);
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/productos?emprendimiento_id=${emprendimientoId}`
+        `${API_BASE_URL}/api/productos?emprendimiento_id=${emprendimientoId}`,
+        {
+          headers: {
+            ...getAuthHeaders(),
+          },
+        }
       );
       if (!response.ok) {
         throw new Error("No se pudieron obtener los productos");
@@ -78,7 +101,12 @@ export default function Profile({ user, onProfileLoaded }) {
       setError("");
       try {
         const response = await fetch(
-          `${API_BASE_URL}/api/user/profile/${userId}`
+          `${API_BASE_URL}/api/user/profile/${userId}`,
+          {
+            headers: {
+              ...getAuthHeaders(),
+            },
+          }
         );
         if (!response.ok) {
           throw new Error("No se pudo obtener la información del perfil");
@@ -89,12 +117,12 @@ export default function Profile({ user, onProfileLoaded }) {
 
         const normalizedEmprendimiento = profileData?.emprendimiento
           ? {
-              ...profileData.emprendimiento,
-              nombres: profileData.nombres,
-              apellidos: profileData.apellidos,
-              correo: profileData.correo,
-              telefono: profileData.telefono,
-            }
+            ...profileData.emprendimiento,
+            nombres: profileData.nombres,
+            apellidos: profileData.apellidos,
+            correo: profileData.correo,
+            telefono: profileData.telefono,
+          }
           : {};
 
         setEmprendimiento(normalizedEmprendimiento);
@@ -104,9 +132,9 @@ export default function Profile({ user, onProfileLoaded }) {
 
         const baseUser = baseUserData ||
           fallbackUser || {
-            id: profileData.id_usuario,
-            username: profileData.username,
-          };
+          id: profileData.id_usuario,
+          username: profileData.username,
+        };
 
         const updatedUser = { ...baseUser, profile: profileData };
         localStorage.setItem("user", JSON.stringify(updatedUser));
@@ -164,6 +192,14 @@ export default function Profile({ user, onProfileLoaded }) {
     : null;
   const instagramLabel = instagramValue.replace(/^https?:\/\//, "");
 
+  const emprendimientoActionLabel = emprendimiento?.id_emprendimiento
+    ? "Editar emprendimiento"
+    : "Agregar emprendimiento";
+
+  const handleOpenEntrepreneurship = () => {
+    setShowEntrepreneurshipModal(true);
+  };
+
   const handleAgregar = () => {
     setProductoEdit(null);
     setShowModal(true);
@@ -212,7 +248,10 @@ export default function Profile({ user, onProfileLoaded }) {
 
       const response = await fetch(endpoint, {
         method,
-        headers: { "Content-Type": "application/json" },
+         headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
         body: JSON.stringify(payload),
       });
 
@@ -245,6 +284,85 @@ export default function Profile({ user, onProfileLoaded }) {
     }
   };
 
+ const handleSaveEntrepreneurship = async (data) => {
+    if (!data?.nombre?.trim()) {
+      setError("El nombre del emprendimiento es obligatorio.");
+      return;
+    }
+
+    if (!emprendimiento?.id_emprendimiento && !currentUser?.id) {
+      setError("No se encontró el usuario para crear el emprendimiento.");
+      return;
+    }
+
+    try {
+      setSavingEntrepreneurship(true);
+      setError("");
+
+      const endpoint = emprendimiento?.id_emprendimiento
+        ? `${API_BASE_URL}/api/emprendimientos/${emprendimiento.id_emprendimiento}`
+        : `${API_BASE_URL}/api/emprendimientos`;
+
+      const method = emprendimiento?.id_emprendimiento ? "PUT" : "POST";
+
+      const payload = {
+        nombre: data.nombre?.trim(),
+        descripcion: data.descripcion?.trim() || "",
+        imagen_url: data.imagen_url?.trim() || "",
+        instagram: data.instagram?.trim() || "",
+        id_usuario: emprendimiento?.id_emprendimiento ? undefined : currentUser?.id,
+      };
+
+      const response = await fetch(endpoint, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "No se pudo guardar el emprendimiento");
+      }
+
+      const normalized = normalizeEmprendimiento(
+        result.emprendimiento || result.emprendimientoActualizado || result
+      );
+
+      setEmprendimiento(normalized);
+      setCurrentUser((prevUser) => {
+        if (!prevUser) return prevUser;
+        const updatedProfile = {
+          ...(prevUser.profile || {}),
+          emprendimiento: {
+            ...(prevUser.profile?.emprendimiento || {}),
+            ...normalized,
+          },
+        };
+
+        const merged = { ...prevUser, profile: updatedProfile };
+        localStorage.setItem("user", JSON.stringify(merged));
+        onProfileLoaded?.(merged);
+        return merged;
+      });
+
+      setShowEntrepreneurshipModal(false);
+
+      if (normalized.id_emprendimiento) {
+        await fetchProductos(normalized.id_emprendimiento);
+      }
+    } catch (err) {
+      console.error("Error guardando emprendimiento:", err);
+      setError(err.message || "No se pudo guardar el emprendimiento");
+    } finally {
+      setSavingEntrepreneurship(false);
+    }
+  };
+
+
   const handleEliminarProducto = async (producto) => {
     if (
       !producto?.id ||
@@ -259,7 +377,12 @@ export default function Profile({ user, onProfileLoaded }) {
       setError("");
       const response = await fetch(
         `${API_BASE_URL}/api/productos/${producto.id}`,
-        { method: "DELETE" }
+        {
+          method: "DELETE",
+          headers: {
+            ...getAuthHeaders(),
+          },
+        }
       );
 
       const result = await response.json();
@@ -347,10 +470,9 @@ export default function Profile({ user, onProfileLoaded }) {
                   Editar perfil
                 </button>
                 <button
-                  onClick={handleAgregar}
+                  onClick={handleOpenEntrepreneurship}
                   className="px-6 py-2 bg-gradient-to-r from-[#557051] to-[#6a8a62] hover:from-[#445a3f] hover:to-[#557051] text-white rounded-xl text-sm transition-all duration-200 shadow-md hover:shadow-lg active:scale-95"
-                >
-                  Agregar producto
+                >{emprendimientoActionLabel}
                 </button>
               </div>
 
@@ -473,10 +595,10 @@ export default function Profile({ user, onProfileLoaded }) {
                 Editar perfil
               </button>
               <button
-                onClick={handleAgregar}
+                onClick={handleOpenEntrepreneurship}
                 className="flex-1 px-4 py-2 bg-gradient-to-r from-[#557051] to-[#6a8a62] hover:from-[#445a3f] hover:to-[#557051] text-white rounded-xl text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg active:scale-95"
               >
-                Agregar
+                {emprendimientoActionLabel}
               </button>
             </div>
           </div>
@@ -503,7 +625,7 @@ export default function Profile({ user, onProfileLoaded }) {
               </p>
               <button
                 onClick={handleAgregar}
-                className="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-semibold text-sm shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95"
+                className="px-8 py-3 bg-[#557051] hover:from-blue-600 text-white rounded-xl font-semibold text-sm shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95"
               >
                 Comparte tu primer producto
               </button>
@@ -537,6 +659,13 @@ export default function Profile({ user, onProfileLoaded }) {
         onClose={() => setShowEditProfileModal(false)}
         emprendimientoData={emprendimiento}
         onSave={handleSaveProfile}
+      />
+      <EntrepreneurshipForm
+        visible={showEntrepreneurshipModal}
+        onClose={() => setShowEntrepreneurshipModal(false)}
+        initialData={emprendimiento}
+        onSubmit={handleSaveEntrepreneurship}
+        loading={savingEntrepreneurship}
       />
     </>
   );
