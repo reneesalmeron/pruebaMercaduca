@@ -1,9 +1,14 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
 import TopBar from "./components/TopBar";
 import Landing from "./components/Landing";
 import Catalog from "./components/Catalog";
-import Sellers from "./components/Entrepreneurship"
+import Sellers from "./components/Entrepreneurship";
 import AboutUs from "./components/AboutUs";
 import ProductDetailPage from "./components/ProductDetail/ProductDetailPage";
 import Login from "./components/Login";
@@ -36,29 +41,41 @@ export default function App() {
     setCurrentUser(userData);
   }, []);
 
-  const handleProfileLoaded = useCallback(
-    (profileData) => {
-      if (profileData) {
-        setCurrentUser(profileData);
-      }
-    },
-    []
-  );
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem("user");
+    localStorage.removeItem("isAuthenticated");
+    localStorage.removeItem("token");
+    setCurrentUser(null);
+  }, []);
+
+  const handleProfileLoaded = useCallback((profileData) => {
+    if (profileData) {
+      setCurrentUser(profileData);
+    }
+  }, []);
   return (
     <Router>
       <ScrollToTop />
-      <TopBar user={currentUser} />
+      <TopBar user={currentUser} onLogout={handleLogout} />
 
       <Routes>
         {" "}
         <Route path="/" element={<Landing />} />
         <Route path="/catalog" element={<Catalog />} />
-        <Route path="/emprendimientos" element={<Sellers/>} />
+        <Route path="/emprendimientos" element={<Sellers />} />
         <Route path="/emprendimiento/:id" element={<PublicProfile />} />
         <Route path="/sobreNosotros" element={<AboutUs />} />
         <Route path="/detalle/:id" element={<ProductDetailPage />} />
-        <Route path="/vender" element={<Login onLoginSuccess={handleLoginSuccess}/>} />
-        <Route path="/perfil" element={<Profile user={currentUser} onProfileLoader={handleProfileLoaded}/>} />
+        <Route
+          path="/vender"
+          element={<Login onLoginSuccess={handleLoginSuccess} />}
+        />
+        <Route
+          path="/perfil"
+          element={
+            <Profile user={currentUser} onProfileLoader={handleProfileLoaded} />
+          }
+        />
         <Route path="/registrar" element={<Register />} />
         <Route path="/forbidden" element={<Forbidden />} />
         <Route path="/bad-request" element={<BadRequest />} />
