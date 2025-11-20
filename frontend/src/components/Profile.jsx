@@ -72,7 +72,7 @@ export default function Profile({ user, onProfileLoaded }) {
     setLoadingProductos(true);
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/productos?emprendimiento_id=${emprendimientoId}`,
+        `${API_BASE_URL}/api/products?emprendimiento_id=${emprendimientoId}`,
         {
           headers: {
             ...getAuthHeaders(),
@@ -242,8 +242,8 @@ export default function Profile({ user, onProfileLoaded }) {
       setError("");
 
       const endpoint = productoEdit?.id
-        ? `${API_BASE_URL}/api/productos/${productoEdit.id}`
-        : `${API_BASE_URL}/api/productos`;
+        ? `${API_BASE_URL}/api/products/${productoEdit.id}`
+        : `${API_BASE_URL}/api/products`;
       const method = productoEdit?.id ? "PUT" : "POST";
 
       const response = await fetch(endpoint, {
@@ -300,8 +300,8 @@ export default function Profile({ user, onProfileLoaded }) {
       setError("");
 
       const endpoint = emprendimiento?.id_emprendimiento
-        ? `${API_BASE_URL}/api/emprendimientos/${emprendimiento.id_emprendimiento}`
-        : `${API_BASE_URL}/api/emprendimientos`;
+        ? `${API_BASE_URL}/api/entrepreneurship/${emprendimiento.id_emprendimiento}`
+        : `${API_BASE_URL}/api/entrepreneurship`;
 
       const method = emprendimiento?.id_emprendimiento ? "PUT" : "POST";
 
@@ -376,7 +376,7 @@ export default function Profile({ user, onProfileLoaded }) {
     try {
       setError("");
       const response = await fetch(
-        `${API_BASE_URL}/api/productos/${producto.id}`,
+        `${API_BASE_URL}/api/productos/${products.id}`,
         {
           method: "DELETE",
           headers: {
