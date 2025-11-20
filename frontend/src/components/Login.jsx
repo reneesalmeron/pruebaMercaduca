@@ -21,13 +21,18 @@ const Login = ({ onLoginSuccess }) => {
     });
   };
 
-  const handleLoginSuccess = async (user) => {
+  const handleLoginSuccess = async (user, token) => {
     // Guardar información del usuario en localStorage
     let enrichedUser = user;
 
     try {
       const profileResponse = await fetch(
-        `${API_BASE_URL}/api/user/profile/${user.id}`
+        `${API_BASE_URL}/api/user/profile/${user.id}`,
+        {
+          headers: {
+            Authorization: token ? `Bearer ${token}` : undefined,
+          },
+        }
       );
 
       if (!profileResponse.ok) {
@@ -94,7 +99,7 @@ const Login = ({ onLoginSuccess }) => {
           throw new Error("El usuario no tiene ID en la respuesta");
         }
 
-        handleLoginSuccess(user);
+        handleLoginSuccess(user, token);
       } else {
         throw new Error(data.message || "Error en el login");
       }
