@@ -15,6 +15,7 @@ export default function ProductForm({
   onSubmit,
   producto,
   onDelete,
+  errorMessage,
 }) {
   const [nombre, setNombre] = useState("");
   const [categoria, setCategoria] = useState("");
