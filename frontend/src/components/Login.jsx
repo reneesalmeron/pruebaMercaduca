@@ -1,9 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import chicaFondoLogin from "../images/chicaFondoLogin.png";
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+import { API_BASE_URL } from "../utils/api";
 
 const Login = ({ onLoginSuccess }) => {
   const [formData, setFormData] = useState({
@@ -70,7 +68,7 @@ const Login = ({ onLoginSuccess }) => {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/logIn", {
+      const response = await fetch(`${API_BASE_URL}/api/auth/logIn`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -99,7 +97,7 @@ const Login = ({ onLoginSuccess }) => {
           throw new Error("El usuario no tiene ID en la respuesta");
         }
 
-        handleLoginSuccess(user);
+        handleLoginSuccess(user, token);
       } else {
         throw new Error(data.message || "Error en el login");
       }

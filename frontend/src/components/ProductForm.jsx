@@ -16,8 +16,6 @@ export default function ProductForm({
   producto,
   onDelete,
 }) {
-  const API_BASE_URL =
-    import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
   const [nombre, setNombre] = useState("");
   const [categoria, setCategoria] = useState("");
   const [precio, setPrecio] = useState("");
@@ -236,6 +234,12 @@ export default function ProductForm({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5 font-montserrat">
+          {errorMessage && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {errorMessage}
+            </div>
+          )}
+
           <div className="space-y-1">
             <label className="block text-sm font-semibold text-zinc-700 mb-2">
               Nombre del producto
@@ -264,7 +268,7 @@ export default function ProductForm({
               {categorias.map((cat) => (
                 <option
                   key={cat.id_categoria}
-                  value={cat.categoria}
+                  value={cat.id_categoria}
                   className="text-zinc-800"
                 >
                   {cat.categoria}

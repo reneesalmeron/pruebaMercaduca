@@ -5,9 +5,7 @@ import ProductForm from "./ProductForm";
 import EditProfile from "./EditProfile";
 import EntrepreneurshipForm from "./EntrepreneurshipForm";
 import logoVerde from "../images/logoVerde.png";
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+import { API_BASE_URL } from "../utils/api";
 const PROFILE_PLACEHOLDER = logoVerde;
 
 const getAuthHeaders = () => {
@@ -21,6 +19,7 @@ export default function Profile({ user, onProfileLoaded }) {
   const [productoEdit, setProductoEdit] = useState(null);
   const [showEntrepreneurshipModal, setShowEntrepreneurshipModal] = useState(false);
   const [savingEntrepreneurship, setSavingEntrepreneurship] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
   const [emprendimiento, setEmprendimiento] = useState({});
   const [productos, setProductos] = useState([]);
   const [currentUser, setCurrentUser] = useState(() => {
@@ -59,13 +58,27 @@ export default function Profile({ user, onProfileLoaded }) {
 
   const normalizeEmprendimiento = (data = {}) => ({
     id_emprendimiento:
-      data.id_emprendimiento || data.id || data.idEmprendimiento || null,
-    nombre: data.nombre || data.Nombre || "",
-    descripcion: data.descripcion || data.Descripcion || "",
-    imagen_url: data.imagen_url || data.Imagen_URL || data.imagen || "",
-    instagram: data.instagram || data.Instagram || "",
+      data.id_emprendimiento ||
+      data.id ||
+      data.idEmprendimiento ||
+      data.emprendimiento_id ||
+      null,
+    nombre: data.nombre || data.Nombre || data.emprendimiento_nombre || "",
+    descripcion:
+      data.descripcion || data.Descripcion || data.emprendimiento_descripcion || "",
+    imagen_url:
+      data.imagen_url ||
+      data.Imagen_URL ||
+      data.imagen ||
+      data.emprendimiento_imagen_url ||
+      "",
+    instagram: data.instagram || data.Instagram || data.emprendimiento_instagram || "",
     disponible: data.disponible ?? data.Disponible ?? true,
-    id_categoria: data.id_categoria || data.idCategoria || null,
+    id_categoria:
+      data.id_categoria ||
+      data.idCategoria ||
+      data.emprendimiento_id_categoria ||
+      null,
   });
 
   const fetchProductos = useCallback(async (emprendimientoId) => {
@@ -95,6 +108,42 @@ export default function Profile({ user, onProfileLoaded }) {
     }
   }, []);
 
+  const fetchEmprendimientoById = useCallback(
+    async (emprendimientoId) => {
+      if (!emprendimientoId) return null;
+
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/entrepreneurship/${emprendimientoId}`,
+          {
+            headers: {
+              ...getAuthHeaders(),
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("No se pudo obtener el emprendimiento");
+        }
+
+        const data = await response.json();
+        const normalized = normalizeEmprendimiento(data);
+        setEmprendimiento(normalized);
+
+        if (normalized.id_emprendimiento) {
+          await fetchProductos(normalized.id_emprendimiento);
+        }
+
+        return normalized;
+      } catch (fetchError) {
+        console.error("Error obteniendo emprendimiento:", fetchError);
+        setError(fetchError.message || "Error al cargar el emprendimiento");
+        return null;
+      }
+    },
+    [fetchProductos]
+  );
+
   const loadProfile = useCallback(
     async (userId, baseUserData = null) => {
       setLoadingProfile(true);
@@ -115,37 +164,45 @@ export default function Profile({ user, onProfileLoaded }) {
         const payload = await response.json();
         const profileData = payload.profile || payload;
 
-        const normalizedEmprendimiento = profileData?.emprendimiento
-          ? {
-            ...profileData.emprendimiento,
-            nombres: profileData.nombres,
-            apellidos: profileData.apellidos,
-            correo: profileData.correo,
-            telefono: profileData.telefono,
-          }
-          : {};
+        let normalizedEmprendimiento = null;
 
-        setEmprendimiento(normalizedEmprendimiento);
+        if (profileData?.emprendimiento) {
+          normalizedEmprendimiento = normalizeEmprendimiento(
+            profileData.emprendimiento
+          );
+          setEmprendimiento(normalizedEmprendimiento);
+
+          if (normalizedEmprendimiento?.id_emprendimiento) {
+            await fetchProductos(normalizedEmprendimiento.id_emprendimiento);
+          }
+        } else if (profileData?.id_emprendimiento) {
+          normalizedEmprendimiento = await fetchEmprendimientoById(
+            profileData.id_emprendimiento
+          );
+        } else {
+          setEmprendimiento({});
+          setProductos([]);
+        }
 
         const storedFallback = localStorage.getItem("user");
         const fallbackUser = storedFallback ? JSON.parse(storedFallback) : null;
 
-        const baseUser = baseUserData ||
+        const baseUser =
+          baseUserData ||
           fallbackUser || {
-          id: profileData.id_usuario,
-          username: profileData.username,
+            id: profileData.id_usuario,
+            username: profileData.username || profileData.Usuario,
+          };
+
+        const updatedProfile = {
+          ...profileData,
+          emprendimiento: normalizedEmprendimiento,
         };
 
-        const updatedUser = { ...baseUser, profile: profileData };
+        const updatedUser = { ...baseUser, profile: updatedProfile };
         localStorage.setItem("user", JSON.stringify(updatedUser));
         setCurrentUser(updatedUser);
         onProfileLoaded?.(updatedUser);
-
-        if (profileData?.emprendimiento?.id_emprendimiento) {
-          await fetchProductos(profileData.emprendimiento.id_emprendimiento);
-        } else {
-          setProductos([]);
-        }
       } catch (profileError) {
         console.error("Error obteniendo perfil:", profileError);
         setError(profileError.message || "Error al cargar el perfil");
@@ -153,7 +210,7 @@ export default function Profile({ user, onProfileLoaded }) {
         setLoadingProfile(false);
       }
     },
-    [fetchProductos, onProfileLoaded]
+    [fetchProductos, fetchEmprendimientoById, onProfileLoaded]
   );
 
   useEffect(() => {
@@ -184,6 +241,10 @@ export default function Profile({ user, onProfileLoaded }) {
     currentUser?.profile?.username ||
     "Tu emprendimiento";
   const emprendimientoDescripcion = emprendimiento?.descripcion || "";
+  const profileDataForForm = {
+    ...(currentUser?.profile || {}),
+    ...(emprendimiento || {}),
+  };
   const instagramValue = emprendimiento?.instagram || "";
   const instagramHref = instagramValue
     ? instagramValue.startsWith("http")
@@ -197,15 +258,18 @@ export default function Profile({ user, onProfileLoaded }) {
     : "Agregar emprendimiento";
 
   const handleOpenEntrepreneurship = () => {
+    setError("");
     setShowEntrepreneurshipModal(true);
   };
 
   const handleAgregar = () => {
+    setError("");
     setProductoEdit(null);
     setShowModal(true);
   };
 
   const handleEditar = (producto) => {
+    setError("");
     setProductoEdit(producto);
     setShowModal(true);
   };
@@ -284,9 +348,14 @@ export default function Profile({ user, onProfileLoaded }) {
     }
   };
 
- const handleSaveEntrepreneurship = async (data) => {
+  const handleSaveEntrepreneurship = async (data) => {
     if (!data?.nombre?.trim()) {
       setError("El nombre del emprendimiento es obligatorio.");
+      return;
+    }
+
+    if (!data?.id_categoria) {
+      setError("Selecciona una categoría para tu emprendimiento.");
       return;
     }
 
@@ -310,6 +379,7 @@ export default function Profile({ user, onProfileLoaded }) {
         descripcion: data.descripcion?.trim() || "",
         imagen_url: data.imagen_url?.trim() || "",
         instagram: data.instagram?.trim() || "",
+        id_categoria: Number(data.id_categoria),
         id_usuario: emprendimiento?.id_emprendimiento ? undefined : currentUser?.id,
       };
 
@@ -376,7 +446,7 @@ export default function Profile({ user, onProfileLoaded }) {
     try {
       setError("");
       const response = await fetch(
-        `${API_BASE_URL}/api/productos/${products.id}`,
+        `${API_BASE_URL}/api/products/${producto.id}`,
         {
           method: "DELETE",
           headers: {
@@ -405,36 +475,76 @@ export default function Profile({ user, onProfileLoaded }) {
     }
   };
 
-  const handleSaveProfile = (datos) => {
-    setEmprendimiento((prev) => ({
-      ...prev,
-      ...datos,
-    }));
-    setCurrentUser((prevUser) => {
-      if (!prevUser) return prevUser;
+  const handleSaveProfile = async (datos) => {
+    if (!currentUser?.id) {
+      setError("No se encontró el usuario para actualizar el perfil.");
+      return false;
+    }
 
-      const { nombres, apellidos, correo, telefono, ...emprendimientoDatos } =
-        datos;
+    try {
+      setSavingProfile(true);
+      setError("");
 
-      const updatedProfile = {
-        ...(prevUser.profile || {}),
-        nombres: nombres ?? prevUser.profile?.nombres,
-        apellidos: apellidos ?? prevUser.profile?.apellidos,
-        correo: correo ?? prevUser.profile?.correo,
-        telefono: telefono ?? prevUser.profile?.telefono,
-        emprendimiento: {
-          ...(prevUser.profile?.emprendimiento || {}),
-          ...emprendimientoDatos,
-        },
-      };
+      const response = await fetch(
+        `${API_BASE_URL}/api/user/profile/${currentUser.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeaders(),
+          },
+          body: JSON.stringify({
+            nombres: datos.nombres?.trim(),
+            apellidos: datos.apellidos?.trim(),
+            correo: datos.correo?.trim(),
+            telefono: datos.telefono?.trim(),
+            username:
+              currentUser?.username ||
+              currentUser?.profile?.username ||
+              currentUser?.profile?.Usuario,
+          }),
+        }
+      );
 
-      const mergedUser = { ...prevUser, profile: updatedProfile };
-      localStorage.setItem("user", JSON.stringify(mergedUser));
-      if (onProfileLoaded) {
-        onProfileLoaded(mergedUser);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "No se pudo actualizar el perfil");
       }
-      return mergedUser;
-    });
+
+      setCurrentUser((prevUser) => {
+        if (!prevUser) return prevUser;
+
+        const updatedProfile = {
+          ...(prevUser.profile || {}),
+          nombres: datos.nombres?.trim() ?? prevUser.profile?.nombres,
+          apellidos: datos.apellidos?.trim() ?? prevUser.profile?.apellidos,
+          correo: datos.correo?.trim() ?? prevUser.profile?.correo,
+          telefono: datos.telefono?.trim() ?? prevUser.profile?.telefono,
+        };
+
+        const mergedUser = { ...prevUser, profile: updatedProfile };
+        localStorage.setItem("user", JSON.stringify(mergedUser));
+        onProfileLoaded?.(mergedUser);
+        return mergedUser;
+      });
+
+      setEmprendimiento((prev) => ({
+        ...prev,
+        nombres: datos.nombres,
+        apellidos: datos.apellidos,
+        correo: datos.correo,
+        telefono: datos.telefono,
+      }));
+
+      return true;
+    } catch (profileError) {
+      console.error("Error actualizando perfil:", profileError);
+      setError(profileError.message || "No se pudo actualizar el perfil");
+      return false;
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   return (
@@ -604,7 +714,16 @@ export default function Profile({ user, onProfileLoaded }) {
           </div>
 
           {/* Divider */}
-          <div className="border-t border-gray-300 mt-11"></div>
+          <div className="relative mt-11 mb-2 flex items-center">
+            <div className="flex-1 border-t border-gray-300" />
+            <button
+              onClick={handleAgregar}
+              className="absolute right-0 -top-3 h-10 w-10 rounded-full bg-[#557051] text-white text-2xl font-semibold shadow-md hover:bg-[#445a3f] transition-transform hover:-translate-y-0.5"
+              aria-label="Agregar producto"
+            >
+              +
+            </button>
+          </div>
 
           <div className="flex justify-center">
             <p className="text-sm font-semibold mt-8 pb-4">Productos</p>
@@ -648,24 +767,38 @@ export default function Profile({ user, onProfileLoaded }) {
 
       <ProductForm
         visible={showModal}
-        onClose={() => setShowModal(false)}
+        onClose={() => {
+          setShowModal(false);
+          setProductoEdit(null);
+          setError("");
+        }}
         onSubmit={handleSubmit}
         producto={productoEdit}
         onDelete={handleEliminarProducto}
+        errorMessage={error}
       />
 
       <EditProfile
         visible={showEditProfileModal}
-        onClose={() => setShowEditProfileModal(false)}
-        emprendimientoData={emprendimiento}
+        onClose={() => {
+          setShowEditProfileModal(false);
+          setError("");
+        }}
+        emprendimientoData={profileDataForForm}
         onSave={handleSaveProfile}
+        errorMessage={error}
+        loading={savingProfile}
       />
       <EntrepreneurshipForm
         visible={showEntrepreneurshipModal}
-        onClose={() => setShowEntrepreneurshipModal(false)}
+        onClose={() => {
+          setShowEntrepreneurshipModal(false);
+          setError("");
+        }}
         initialData={emprendimiento}
         onSubmit={handleSaveEntrepreneurship}
         loading={savingEntrepreneurship}
+        errorMessage={error}
       />
     </>
   );
