@@ -95,6 +95,7 @@ export default function Profile({ user, onProfileLoaded }) {
   });
   const currentUserRef = useRef(currentUser);
   const lastLoadedUserIdRef = useRef(null);
+  const lastLoadedTokenRef = useRef(null);
   const lastNotifiedUserIdRef = useRef(null);
   const lastReceivedUserIdRef = useRef(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
@@ -282,20 +283,26 @@ export default function Profile({ user, onProfileLoaded }) {
     const storedRaw = localStorage.getItem("user");
     const storedUser = user || (storedRaw ? JSON.parse(storedRaw) : null);
     const storedUserId = getUserId(storedUser);
+    const storedToken = getStoredToken(storedUser);
 
     if (!storedUserId) {
       lastLoadedUserIdRef.current = null;
+      lastLoadedTokenRef.current = null;
       setEmprendimiento({});
       setProductos([]);
       navigate("/vender");
       return;
     }
 
-    if (lastLoadedUserIdRef.current === storedUserId) {
+    if (
+      lastLoadedUserIdRef.current === storedUserId &&
+      lastLoadedTokenRef.current === storedToken
+    ) {
       return;
     }
 
     lastLoadedUserIdRef.current = storedUserId;
+    lastLoadedTokenRef.current = storedToken;
     setCurrentUser(storedUser);
     loadProfile(storedUserId, storedUser);
   }, [user, navigate, loadProfile]);
