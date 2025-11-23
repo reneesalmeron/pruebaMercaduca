@@ -131,7 +131,6 @@ export default function Profile({ user, onProfileLoaded }) {
   const lastLoadedUserIdRef = useRef(null);
   const lastLoadedTokenRef = useRef(null);
   const lastNotifiedUserIdRef = useRef(null);
-  const lastReceivedUserIdRef = useRef(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingProductos, setLoadingProductos] = useState(false);
   const [error, setError] = useState("");
@@ -316,43 +315,12 @@ export default function Profile({ user, onProfileLoaded }) {
   }, [currentUser]);
 
   useEffect(() => {
-    const incomingUserId = getUserId(user);
-
-    if (!incomingUserId) {
-      setEmprendimiento({});
-      setProductos([]);
-      return;
-    }
-
-    if (lastReceivedUserIdRef.current !== incomingUserId) {
-      lastLoadedUserIdRef.current = null;
-      lastReceivedUserIdRef.current = incomingUserId;
-      setProductos([]);
-
-      if (user?.profile?.emprendimiento) {
-        setEmprendimiento(normalizeEmprendimiento(user.profile.emprendimiento));
-      } else {
-        const cached = getCachedEmprendimiento(incomingUserId);
-        if (cached?.id_emprendimiento) {
-          const normalizedCache = normalizeEmprendimiento(cached);
-          setEmprendimiento(normalizedCache);
-          fetchProductos(normalizedCache.id_emprendimiento);
-        }
-      }
-    }
-  }, [user, fetchProductos]);
-
-  useEffect(() => {
     const storedRaw = localStorage.getItem("user");
     const storedUser = user || (storedRaw ? JSON.parse(storedRaw) : null);
     const storedUserId = getUserId(storedUser);
     const storedToken = getStoredToken(storedUser);
 
     if (!storedUserId) {
-      lastLoadedUserIdRef.current = null;
-      lastLoadedTokenRef.current = null;
-      setEmprendimiento({});
-      setProductos([]);
       navigate("/vender");
       return;
     }
@@ -361,14 +329,37 @@ export default function Profile({ user, onProfileLoaded }) {
       lastLoadedUserIdRef.current === storedUserId &&
       lastLoadedTokenRef.current === storedToken
     ) {
+      if (storedUser?.profile?.emprendimiento) {
+        const normalized = normalizeEmprendimiento(
+          storedUser.profile.emprendimiento
+        );
+        setEmprendimiento(normalized);
+
+        if (normalized.id_emprendimiento && productos.length === 0) {
+          fetchProductos(normalized.id_emprendimiento);
+        }
+      }
       return;
     }
 
     lastLoadedUserIdRef.current = storedUserId;
     lastLoadedTokenRef.current = storedToken;
     setCurrentUser(storedUser);
-    loadProfile(storedUserId, storedUser);
-  }, [user, navigate, loadProfile]);
+
+    if (!storedUser?.profile?.emprendimiento?.id_emprendimiento) {
+      loadProfile(storedUserId, storedUser);
+    } else {
+      const normalized = normalizeEmprendimiento(
+        storedUser.profile.emprendimiento
+      );
+      setEmprendimiento(normalized);
+      setLoadingProfile(false);
+
+      if (normalized.id_emprendimiento) {
+        fetchProductos(normalized.id_emprendimiento);
+      }
+    }
+  }, [user, navigate, loadProfile, fetchProductos, productos.length]);
 
   useEffect(() => {
     if (location.pathname.includes("/perfil/producto/nuevo")) {

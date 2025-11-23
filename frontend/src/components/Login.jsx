@@ -43,7 +43,7 @@ const Login = ({ onLoginSuccess }) => {
 
     try {
       const profileResponse = await fetch(
-        `${API_BASE_URL}/api/user/profile/${user.id}`,
+        `${API_BASE_URL}/api/user/profile/${getUserId(user)}`,
         {
           headers: {
             Authorization: token ? `Bearer ${token}` : undefined,
@@ -112,7 +112,7 @@ const Login = ({ onLoginSuccess }) => {
           throw new Error("El usuario no tiene ID en la respuesta");
         }
 
-        handleLoginSuccess(user, token);
+        await handleLoginSuccess(user, token);
       } else {
         throw new Error(data.message || "Error en el login");
       }
