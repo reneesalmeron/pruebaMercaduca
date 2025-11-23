@@ -212,8 +212,17 @@ export default function Profile({ user, onProfileLoaded }) {
             profileData.id_emprendimiento
           );
         } else {
-          setEmprendimiento({});
-          setProductos([]);
+          const storedFallback =
+            currentUser?.profile?.emprendimiento || emprendimiento;
+
+          if (storedFallback?.id_emprendimiento) {
+            normalizedEmprendimiento = storedFallback;
+            setEmprendimiento(storedFallback);
+            await fetchProductos(storedFallback.id_emprendimiento);
+          } else {
+            setEmprendimiento({});
+            setProductos([]);
+          }
         }
 
         const storedFallback = localStorage.getItem("user");
