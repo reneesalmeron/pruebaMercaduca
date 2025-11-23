@@ -1,9 +1,25 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import chicaFondoLogin from "../images/chicaFondoLogin.png";
+import { API_BASE_URL } from "../utils/api";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+const EMPRENDIMIENTO_CACHE_KEY = "emprendimientoCache";
+
+const getUserId = (data) =>
+  data?.id || data?.id_usuario || data?.userId || data?.idUser || null;
+
+const saveCachedEmprendimiento = (userId, emprendimiento) => {
+  if (!userId || !emprendimiento) return;
+
+  try {
+    const raw = localStorage.getItem(EMPRENDIMIENTO_CACHE_KEY);
+    const cache = raw ? JSON.parse(raw) : {};
+    cache[userId] = emprendimiento;
+    localStorage.setItem(EMPRENDIMIENTO_CACHE_KEY, JSON.stringify(cache));
+  } catch (e) {
+    console.error("No se pudo guardar el cache de emprendimientos", e);
+  }
+};
 
 const Login = ({ onLoginSuccess }) => {
   const [formData, setFormData] = useState({
@@ -23,11 +39,11 @@ const Login = ({ onLoginSuccess }) => {
 
   const handleLoginSuccess = async (user, token) => {
     // Guardar información del usuario en localStorage
-    let enrichedUser = user;
+    let enrichedUser = { ...user, token };
 
     try {
       const profileResponse = await fetch(
-        `${API_BASE_URL}/api/user/profile/${user.id}`,
+        `${API_BASE_URL}/api/user/profile/${getUserId(user)}`,
         {
           headers: {
             Authorization: token ? `Bearer ${token}` : undefined,
@@ -42,18 +58,20 @@ const Login = ({ onLoginSuccess }) => {
       const profilePayload = await profileResponse.json();
       const profileData = profilePayload.profile || profilePayload;
 
-      enrichedUser = { ...user, profile: profileData };
+      enrichedUser = { ...user, token, profile: profileData };
+      const emprendimiento = profileData.emprendimiento;
+      const profileUserId = getUserId(enrichedUser);
+
+      if (emprendimiento && profileUserId) {
+        saveCachedEmprendimiento(profileUserId, emprendimiento);
+      }
     } catch (profileError) {
       console.error("Error al obtener el perfil del usuario:", profileError);
     }
 
+    localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(enrichedUser));
     localStorage.setItem("isAuthenticated", "true");
-
-    // Guardar token si viene en la respuesta
-    if (enrichedUser.token) {
-      localStorage.setItem("token", enrichedUser.token);
-    }
 
     // Ejecutar el callback proporcionado por el padre (si existe)
     if (onLoginSuccess) {
@@ -70,7 +88,7 @@ const Login = ({ onLoginSuccess }) => {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/logIn", {
+      const response = await fetch(`${API_BASE_URL}/api/auth/logIn`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -90,16 +108,11 @@ const Login = ({ onLoginSuccess }) => {
       if (data.success) {
         const { user, token } = data; // Recibimos user y token
 
-        // Guardar token y usuario en localStorage
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
-        localStorage.setItem("isAuthenticated", "true");
-
         if (!user || !user.id) {
           throw new Error("El usuario no tiene ID en la respuesta");
         }
 
-        handleLoginSuccess(user);
+        await handleLoginSuccess(user, token);
       } else {
         throw new Error(data.message || "Error en el login");
       }
