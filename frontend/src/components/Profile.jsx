@@ -268,6 +268,7 @@ export default function Profile({ user, onProfileLoaded }) {
   const emprendimientoActionLabel = emprendimiento?.id_emprendimiento
     ? "Editar emprendimiento"
     : "Agregar emprendimiento";
+  const hasEmprendimiento = Boolean(emprendimiento?.id_emprendimiento);
 
   const handleOpenEntrepreneurship = () => {
     setError("");
@@ -275,6 +276,11 @@ export default function Profile({ user, onProfileLoaded }) {
   };
 
   const handleAgregar = () => {
+    if (!hasEmprendimiento) {
+      setError("Crea tu emprendimiento antes de agregar productos.");
+      return;
+    }
+
     setError("");
     setProductoEdit(null);
     setShowModal(true);
@@ -304,24 +310,31 @@ export default function Profile({ user, onProfileLoaded }) {
       return;
     }
 
-    const precioNumber = parseFloat(data.precio);
+    const precioNumber = parseFloat(data.precio_dolares);
     if (Number.isNaN(precioNumber)) {
       setError("Ingresa un precio válido para el producto.");
       return;
     }
 
-    const categoriaId = data.id_categoria || productoEdit?.id_categoria;
+    const existenciasNumber = parseInt(data.existencias ?? "0", 10);
+    if (Number.isNaN(existenciasNumber) || existenciasNumber < 0) {
+      setError("Ingresa una cantidad de existencias válida.");
+      return;
+    }
+
+    const categoriaId =
+      productoEdit?.id_categoria || emprendimiento?.id_categoria || null;
     if (!categoriaId) {
-      setError("Selecciona una categoría para tu producto.");
+      setError("Selecciona una categoría para tu emprendimiento.");
       return;
     }
 
     const payload = {
       nombre: data.nombre?.trim(),
       descripcion: data.descripcion?.trim() || "",
-      imagen_url: data.imagenes?.[0] || productoEdit?.imagen || "",
+      imagen_url: data.imagen_url?.trim() || productoEdit?.imagen || "",
       precio_dolares: precioNumber,
-      existencias: productoEdit?.stock ?? 1,
+      existencias: existenciasNumber,
       id_categoria: categoriaId,
       id_emprendimiento: emprendimiento.id_emprendimiento,
     };
@@ -744,7 +757,12 @@ export default function Profile({ user, onProfileLoaded }) {
             <div className="flex-1 border-t border-gray-300" />
             <button
               onClick={handleAgregar}
-              className="absolute right-0 -top-3 h-10 w-10 rounded-full bg-[#557051] text-white text-2xl font-semibold shadow-md hover:bg-[#445a3f] transition-transform hover:-translate-y-0.5"
+              disabled={!hasEmprendimiento}
+              className={`absolute right-0 -top-3 h-10 w-10 rounded-full text-white text-2xl font-semibold shadow-md transition-transform hover:-translate-y-0.5 ${
+                hasEmprendimiento
+                  ? "bg-[#557051] hover:bg-[#445a3f]"
+                  : "bg-gray-300 cursor-not-allowed"
+              }`}
               aria-label="Agregar producto"
             >
               +
@@ -770,7 +788,12 @@ export default function Profile({ user, onProfileLoaded }) {
               </p>
               <button
                 onClick={handleAgregar}
-                className="px-8 py-3 bg-[#557051] hover:from-blue-600 text-white rounded-xl font-semibold text-sm shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95"
+                disabled={!hasEmprendimiento}
+                className={`px-8 py-3 text-white rounded-xl font-semibold text-sm shadow-lg transition-all duration-200 active:scale-95 ${
+                  hasEmprendimiento
+                    ? "bg-[#557051] hover:bg-[#445a3f] hover:shadow-xl"
+                    : "bg-gray-300 cursor-not-allowed shadow-none"
+                }`}
               >
                 Comparte tu primer producto
               </button>
