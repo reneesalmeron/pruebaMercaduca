@@ -325,19 +325,22 @@ export default function Profile({ user, onProfileLoaded }) {
       return;
     }
 
+    const hasStoredEmprendimiento = Boolean(
+      storedUser?.profile?.emprendimiento?.id_emprendimiento
+    );
+
     if (
       lastLoadedUserIdRef.current === storedUserId &&
-      lastLoadedTokenRef.current === storedToken
+      lastLoadedTokenRef.current === storedToken &&
+      hasStoredEmprendimiento
     ) {
-      if (storedUser?.profile?.emprendimiento) {
-        const normalized = normalizeEmprendimiento(
-          storedUser.profile.emprendimiento
-        );
-        setEmprendimiento(normalized);
+      const normalized = normalizeEmprendimiento(
+        storedUser.profile.emprendimiento
+      );
+      setEmprendimiento(normalized);
 
-        if (normalized.id_emprendimiento && productos.length === 0) {
-          fetchProductos(normalized.id_emprendimiento);
-        }
+      if (normalized.id_emprendimiento && productos.length === 0) {
+        fetchProductos(normalized.id_emprendimiento);
       }
       return;
     }
