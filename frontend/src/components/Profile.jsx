@@ -94,6 +94,7 @@ export default function Profile({ user, onProfileLoaded }) {
     return stored ? JSON.parse(stored) : null;
   });
   const currentUserRef = useRef(currentUser);
+  const lastLoadedUserIdRef = useRef(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingProductos, setLoadingProductos] = useState(false);
   const [error, setError] = useState("");
@@ -262,10 +263,18 @@ export default function Profile({ user, onProfileLoaded }) {
     const storedUserId = getUserId(storedUser);
 
     if (!storedUserId) {
+      lastLoadedUserIdRef.current = null;
+      setEmprendimiento({});
+      setProductos([]);
       navigate("/vender");
       return;
     }
 
+    if (lastLoadedUserIdRef.current === storedUserId) {
+      return;
+    }
+
+    lastLoadedUserIdRef.current = storedUserId;
     setCurrentUser(storedUser);
     loadProfile(storedUserId, storedUser);
   }, [user, navigate, loadProfile]);
