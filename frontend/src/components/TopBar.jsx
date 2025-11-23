@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import logoVerde from "../images/logoVerde.png";
 import { Menu, X } from "lucide-react";
 
-const PROFILE_PLACEHOLDER = "https://via.placeholder.com/80?text=Perfil";
+const PROFILE_PLACEHOLDER = logoVerde;
 
 export default function TopBar({ user, onLogout }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -15,7 +15,8 @@ export default function TopBar({ user, onLogout }) {
 
   const isAuthenticated = Boolean(user);
 
-  const emprendimientoData = user?.profile?.enterper;
+  const emprendimientoData =
+    user?.profile?.emprendimiento || user?.profile?.enterper;
   const profileImage =
     emprendimientoData?.imagen_url ||
     emprendimientoData?.imagen ||
