@@ -318,15 +318,29 @@ export default function Profile({ user, onProfileLoaded }) {
   useEffect(() => {
     const incomingUserId = getUserId(user);
 
-    if (incomingUserId && lastReceivedUserIdRef.current !== incomingUserId) {
+    if (!incomingUserId) {
+      setEmprendimiento({});
+      setProductos([]);
+      return;
+    }
+
+    if (lastReceivedUserIdRef.current !== incomingUserId) {
       lastLoadedUserIdRef.current = null;
       lastReceivedUserIdRef.current = incomingUserId;
+      setProductos([]);
 
       if (user?.profile?.emprendimiento) {
         setEmprendimiento(normalizeEmprendimiento(user.profile.emprendimiento));
+      } else {
+        const cached = getCachedEmprendimiento(incomingUserId);
+        if (cached?.id_emprendimiento) {
+          const normalizedCache = normalizeEmprendimiento(cached);
+          setEmprendimiento(normalizedCache);
+          fetchProductos(normalizedCache.id_emprendimiento);
+        }
       }
     }
-  }, [user]);
+  }, [user, fetchProductos]);
 
   useEffect(() => {
     const storedRaw = localStorage.getItem("user");

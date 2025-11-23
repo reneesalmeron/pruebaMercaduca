@@ -3,6 +3,24 @@ import { useNavigate } from "react-router-dom";
 import chicaFondoLogin from "../images/chicaFondoLogin.png";
 import { API_BASE_URL } from "../utils/api";
 
+const EMPRENDIMIENTO_CACHE_KEY = "emprendimientoCache";
+
+const getUserId = (data) =>
+  data?.id || data?.id_usuario || data?.userId || data?.idUser || null;
+
+const saveCachedEmprendimiento = (userId, emprendimiento) => {
+  if (!userId || !emprendimiento) return;
+
+  try {
+    const raw = localStorage.getItem(EMPRENDIMIENTO_CACHE_KEY);
+    const cache = raw ? JSON.parse(raw) : {};
+    cache[userId] = emprendimiento;
+    localStorage.setItem(EMPRENDIMIENTO_CACHE_KEY, JSON.stringify(cache));
+  } catch (e) {
+    console.error("No se pudo guardar el cache de emprendimientos", e);
+  }
+};
+
 const Login = ({ onLoginSuccess }) => {
   const [formData, setFormData] = useState({
     username: "",
@@ -41,6 +59,12 @@ const Login = ({ onLoginSuccess }) => {
       const profileData = profilePayload.profile || profilePayload;
 
       enrichedUser = { ...user, token, profile: profileData };
+      const emprendimiento = profileData.emprendimiento;
+      const profileUserId = getUserId(enrichedUser);
+
+      if (emprendimiento && profileUserId) {
+        saveCachedEmprendimiento(profileUserId, emprendimiento);
+      }
     } catch (profileError) {
       console.error("Error al obtener el perfil del usuario:", profileError);
     }
