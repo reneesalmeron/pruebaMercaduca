@@ -42,6 +42,16 @@ export default function ProductForm({
     }
   }, [producto]);
 
+  useEffect(() => {
+    if (visible && !producto) {
+      setNombre("");
+      setDescripcion("");
+      setImagenUrl("");
+      setPrecioDolares("");
+      setExistencias("0");
+    }
+  }, [visible, producto]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const data = {

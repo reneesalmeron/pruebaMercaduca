@@ -32,6 +32,48 @@ const getAuthHeaders = (userData) => {
 const getUserId = (data) =>
   data?.id || data?.id_usuario || data?.userId || data?.idUser || null;
 
+const normalizeProducto = (producto) => ({
+  id: producto?.id ?? producto?.id_producto,
+  nombre: producto?.nombre ?? producto?.Nombre ?? "",
+  descripcion: producto?.descripcion ?? producto?.Descripcion ?? "",
+  precio:
+    producto?.precio ?? producto?.precio_dolares ?? producto?.Precio_dolares ?? 0,
+  imagen:
+    producto?.imagen ??
+    producto?.imagen_url ??
+    producto?.Imagen_URL ??
+    producto?.Imagen_url ??
+    "",
+  id_categoria: producto?.id_categoria ?? null,
+  stock: producto?.stock ?? producto?.existencias ?? producto?.Existencias ?? 0,
+  disponible: producto?.disponible ?? producto?.Disponible ?? true,
+  id_emprendimiento:
+    producto?.emprendimiento_id ?? producto?.id_emprendimiento ?? null,
+  categoria: producto?.categoria ?? producto?.Categoria,
+});
+
+const normalizeEmprendimiento = (data = {}) => ({
+  id_emprendimiento:
+    data.id_emprendimiento ||
+    data.id ||
+    data.idEmprendimiento ||
+    data.emprendimiento_id ||
+    null,
+  nombre: data.nombre || data.Nombre || data.emprendimiento_nombre || "",
+  descripcion:
+    data.descripcion || data.Descripcion || data.emprendimiento_descripcion || "",
+  imagen_url:
+    data.imagen_url ||
+    data.Imagen_URL ||
+    data.imagen ||
+    data.emprendimiento_imagen_url ||
+    "",
+  instagram: data.instagram || data.Instagram || data.emprendimiento_instagram || "",
+  disponible: data.disponible ?? data.Disponible ?? true,
+  id_categoria:
+    data.id_categoria || data.idCategoria || data.emprendimiento_id_categoria || null,
+});
+
 export default function Profile({ user, onProfileLoaded }) {
   const [showModal, setShowModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
@@ -39,7 +81,12 @@ export default function Profile({ user, onProfileLoaded }) {
   const [showEntrepreneurshipModal, setShowEntrepreneurshipModal] = useState(false);
   const [savingEntrepreneurship, setSavingEntrepreneurship] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
-  const [emprendimiento, setEmprendimiento] = useState({});
+  const [emprendimiento, setEmprendimiento] = useState(() => {
+    const stored = user || localStorage.getItem("user");
+    const parsed = typeof stored === "string" ? JSON.parse(stored) : stored;
+    const rawEmpr = parsed?.profile?.emprendimiento || parsed?.profile;
+    return rawEmpr ? normalizeEmprendimiento(rawEmpr) : {};
+  });
   const [productos, setProductos] = useState([]);
   const [currentUser, setCurrentUser] = useState(() => {
     if (user) return user;
@@ -51,55 +98,6 @@ export default function Profile({ user, onProfileLoaded }) {
   const [error, setError] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
-
-  const normalizeProducto = (producto) => ({
-    id: producto?.id ?? producto?.id_producto,
-    nombre: producto?.nombre ?? producto?.Nombre ?? "",
-    descripcion: producto?.descripcion ?? producto?.Descripcion ?? "",
-    precio:
-      producto?.precio ??
-      producto?.precio_dolares ??
-      producto?.Precio_dolares ??
-      0,
-    imagen:
-      producto?.imagen ??
-      producto?.imagen_url ??
-      producto?.Imagen_URL ??
-      producto?.Imagen_url ??
-      "",
-    id_categoria: producto?.id_categoria ?? null,
-    stock:
-      producto?.stock ?? producto?.existencias ?? producto?.Existencias ?? 0,
-    disponible: producto?.disponible ?? producto?.Disponible ?? true,
-    id_emprendimiento:
-      producto?.emprendimiento_id ?? producto?.id_emprendimiento ?? null,
-    categoria: producto?.categoria ?? producto?.Categoria,
-  });
-
-  const normalizeEmprendimiento = (data = {}) => ({
-    id_emprendimiento:
-      data.id_emprendimiento ||
-      data.id ||
-      data.idEmprendimiento ||
-      data.emprendimiento_id ||
-      null,
-    nombre: data.nombre || data.Nombre || data.emprendimiento_nombre || "",
-    descripcion:
-      data.descripcion || data.Descripcion || data.emprendimiento_descripcion || "",
-    imagen_url:
-      data.imagen_url ||
-      data.Imagen_URL ||
-      data.imagen ||
-      data.emprendimiento_imagen_url ||
-      "",
-    instagram: data.instagram || data.Instagram || data.emprendimiento_instagram || "",
-    disponible: data.disponible ?? data.Disponible ?? true,
-    id_categoria:
-      data.id_categoria ||
-      data.idCategoria ||
-      data.emprendimiento_id_categoria ||
-      null,
-  });
 
   const fetchProductos = useCallback(
     async (emprendimientoId) => {
@@ -236,7 +234,6 @@ export default function Profile({ user, onProfileLoaded }) {
         const updatedUser = { ...baseUser, token: authToken, profile: updatedProfile };
         localStorage.setItem("user", JSON.stringify(updatedUser));
         setCurrentUser(updatedUser);
-        onProfileLoaded?.(updatedUser);
       } catch (profileError) {
         console.error("Error obteniendo perfil:", profileError);
         setError(profileError.message || "Error al cargar el perfil");
@@ -244,7 +241,7 @@ export default function Profile({ user, onProfileLoaded }) {
         setLoadingProfile(false);
       }
     },
-    [currentUser, fetchProductos, fetchEmprendimientoById, onProfileLoaded, navigate]
+    [currentUser, fetchProductos, fetchEmprendimientoById, navigate]
   );
 
   useEffect(() => {
@@ -266,6 +263,12 @@ export default function Profile({ user, onProfileLoaded }) {
       setShowModal(true);
     }
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (currentUser && onProfileLoaded) {
+      onProfileLoaded(currentUser);
+    }
+  }, [currentUser, onProfileLoaded]);
 
   if (loadingProfile) {
     return (
@@ -483,7 +486,6 @@ export default function Profile({ user, onProfileLoaded }) {
 
         const merged = { ...prevUser, profile: updatedProfile };
         localStorage.setItem("user", JSON.stringify(merged));
-        onProfileLoaded?.(merged);
         return merged;
       });
 
@@ -594,7 +596,6 @@ export default function Profile({ user, onProfileLoaded }) {
 
         const mergedUser = { ...prevUser, profile: updatedProfile };
         localStorage.setItem("user", JSON.stringify(mergedUser));
-        onProfileLoaded?.(mergedUser);
         return mergedUser;
       });
 
