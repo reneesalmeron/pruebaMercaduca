@@ -58,11 +58,12 @@ const Login = ({ onLoginSuccess }) => {
 
   const handleLoginSuccess = async (user, token) => {
     // Guardar información del usuario en localStorage
-    let enrichedUser = { ...user, token };
+    const initialUserId = getUserId(user);
+    let enrichedUser = { ...user, id: initialUserId, token };
 
     try {
       const profileResponse = await fetch(
-        `${API_BASE_URL}/api/user/profile/${getUserId(user)}`,
+        `${API_BASE_URL}/api/user/profile/${initialUserId}`,
         {
           headers: {
             Authorization: token ? `Bearer ${token}` : undefined,
@@ -79,7 +80,7 @@ const Login = ({ onLoginSuccess }) => {
       const emprendimiento = profileData.emprendimiento;
       const emprendimientoId =
         emprendimiento?.id_emprendimiento || emprendimiento?.id;
-      const profileUserId = getUserId(user);
+      const profileUserId = initialUserId || getUserId(profileData);
 
       let productos = [];
 
@@ -105,6 +106,7 @@ const Login = ({ onLoginSuccess }) => {
 
       enrichedUser = {
         ...user,
+        id: profileUserId,
         token,
         profile: { ...profileData, productos },
       };
@@ -155,11 +157,12 @@ const Login = ({ onLoginSuccess }) => {
       if (data.success) {
         const { user, token } = data; // Recibimos user y token
 
-        if (!user || !user.id) {
+        const userId = getUserId(user);
+        if (!user || !userId) {
           throw new Error("El usuario no tiene ID en la respuesta");
         }
 
-        await handleLoginSuccess(user, token);
+        await handleLoginSuccess({ ...user, id: userId }, token);
       } else {
         throw new Error(data.message || "Error en el login");
       }
