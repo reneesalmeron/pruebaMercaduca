@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import ProductCard from "./Card";
 import ProductForm from "./ProductForm";
 import EditProfile from "./EditProfile";
@@ -11,7 +11,10 @@ const PROFILE_PLACEHOLDER = logoVerde;
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
   return token ? { Authorization: `Bearer ${token}` } : {};
-}
+};
+
+const getUserId = (data) =>
+  data?.id || data?.id_usuario || data?.userId || data?.idUser || null;
 
 export default function Profile({ user, onProfileLoaded }) {
   const [showModal, setShowModal] = useState(false);
@@ -30,6 +33,7 @@ export default function Profile({ user, onProfileLoaded }) {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingProductos, setLoadingProductos] = useState(false);
   const [error, setError] = useState("");
+  const location = useLocation();
   const navigate = useNavigate();
 
   const normalizeProducto = (producto) => ({
@@ -216,14 +220,22 @@ export default function Profile({ user, onProfileLoaded }) {
   useEffect(() => {
     const storedRaw = localStorage.getItem("user");
     const storedUser = user || (storedRaw ? JSON.parse(storedRaw) : null);
-    if (!storedUser?.id) {
+    const storedUserId = getUserId(storedUser);
+
+    if (!storedUserId) {
       navigate("/vender");
       return;
     }
 
     setCurrentUser(storedUser);
-    loadProfile(storedUser.id, storedUser);
+    loadProfile(storedUserId, storedUser);
   }, []);
+
+  useEffect(() => {
+    if (location.pathname.includes("/perfil/producto/nuevo")) {
+      setShowModal(true);
+    }
+  }, [location.pathname]);
 
   if (loadingProfile) {
     return (
@@ -266,6 +278,18 @@ export default function Profile({ user, onProfileLoaded }) {
     setError("");
     setProductoEdit(null);
     setShowModal(true);
+    if (!location.pathname.includes("/perfil/producto/nuevo")) {
+      navigate("/perfil/producto/nuevo", { replace: false });
+    }
+  };
+
+  const closeProductForm = () => {
+    setShowModal(false);
+    setProductoEdit(null);
+    setError("");
+    if (location.pathname.includes("/perfil/producto/nuevo")) {
+      navigate("/perfil", { replace: true });
+    }
   };
 
   const handleEditar = (producto) => {
@@ -340,8 +364,7 @@ export default function Profile({ user, onProfileLoaded }) {
         await fetchProductos(emprendimiento.id_emprendimiento);
       }
 
-      setProductoEdit(null);
-      setShowModal(false);
+      closeProductForm();
     } catch (err) {
       console.error("Error guardando producto:", err);
       setError(err.message || "No se pudo guardar el producto");
@@ -359,7 +382,9 @@ export default function Profile({ user, onProfileLoaded }) {
       return;
     }
 
-    if (!emprendimiento?.id_emprendimiento && !currentUser?.id) {
+    const userId = getUserId(currentUser);
+
+    if (!emprendimiento?.id_emprendimiento && !userId) {
       setError("No se encontró el usuario para crear el emprendimiento.");
       return;
     }
@@ -380,7 +405,7 @@ export default function Profile({ user, onProfileLoaded }) {
         imagen_url: data.imagen_url?.trim() || "",
         instagram: data.instagram?.trim() || "",
         id_categoria: Number(data.id_categoria),
-        id_usuario: emprendimiento?.id_emprendimiento ? undefined : currentUser?.id,
+        id_usuario: emprendimiento?.id_emprendimiento ? undefined : userId,
       };
 
       const response = await fetch(endpoint, {
@@ -467,8 +492,7 @@ export default function Profile({ user, onProfileLoaded }) {
         await fetchProductos(emprendimiento.id_emprendimiento);
       }
 
-      setProductoEdit(null);
-      setShowModal(false);
+      closeProductForm();
     } catch (err) {
       console.error("Error eliminando producto:", err);
       setError(err.message || "No se pudo eliminar el producto");
@@ -476,7 +500,9 @@ export default function Profile({ user, onProfileLoaded }) {
   };
 
   const handleSaveProfile = async (datos) => {
-    if (!currentUser?.id) {
+    const userId = getUserId(currentUser);
+
+    if (!userId) {
       setError("No se encontró el usuario para actualizar el perfil.");
       return false;
     }
@@ -486,7 +512,7 @@ export default function Profile({ user, onProfileLoaded }) {
       setError("");
 
       const response = await fetch(
-        `${API_BASE_URL}/api/user/profile/${currentUser.id}`,
+        `${API_BASE_URL}/api/user/profile/${userId}`,
         {
           method: "PUT",
           headers: {
@@ -767,11 +793,7 @@ export default function Profile({ user, onProfileLoaded }) {
 
       <ProductForm
         visible={showModal}
-        onClose={() => {
-          setShowModal(false);
-          setProductoEdit(null);
-          setError("");
-        }}
+        onClose={closeProductForm}
         onSubmit={handleSubmit}
         producto={productoEdit}
         onDelete={handleEliminarProducto}
