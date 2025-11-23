@@ -8,8 +8,24 @@ import logoVerde from "../images/logoVerde.png";
 import { API_BASE_URL } from "../utils/api";
 const PROFILE_PLACEHOLDER = logoVerde;
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem("token");
+const getStoredToken = (userData) => {
+  const localToken = localStorage.getItem("token");
+  if (localToken && localToken !== "undefined" && localToken !== "null") {
+    return localToken;
+  }
+
+  const fallbackToken =
+    userData?.token || userData?.profile?.token || userData?.accessToken;
+
+  if (fallbackToken && fallbackToken !== "undefined" && fallbackToken !== "null") {
+    return fallbackToken;
+  }
+
+  return null;
+};
+
+const getAuthHeaders = (userData) => {
+  const token = getStoredToken(userData);
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
@@ -85,32 +101,35 @@ export default function Profile({ user, onProfileLoaded }) {
       null,
   });
 
-  const fetchProductos = useCallback(async (emprendimientoId) => {
-    setLoadingProductos(true);
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/products?emprendimiento_id=${emprendimientoId}`,
-        {
-          headers: {
-            ...getAuthHeaders(),
-          },
+  const fetchProductos = useCallback(
+    async (emprendimientoId) => {
+      setLoadingProductos(true);
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/products?emprendimiento_id=${emprendimientoId}`,
+          {
+            headers: {
+              ...getAuthHeaders(currentUser),
+            },
+          }
+        );
+        if (!response.ok) {
+          throw new Error("No se pudieron obtener los productos");
         }
-      );
-      if (!response.ok) {
-        throw new Error("No se pudieron obtener los productos");
+        const data = await response.json();
+        const productosNormalizados = (data.productos || []).map((p) =>
+          normalizeProducto(p)
+        );
+        setProductos(productosNormalizados);
+      } catch (fetchError) {
+        console.error("Error cargando productos:", fetchError);
+        setError(fetchError.message || "Error al cargar los productos");
+      } finally {
+        setLoadingProductos(false);
       }
-      const data = await response.json();
-      const productosNormalizados = (data.productos || []).map((p) =>
-        normalizeProducto(p)
-      );
-      setProductos(productosNormalizados);
-    } catch (fetchError) {
-      console.error("Error cargando productos:", fetchError);
-      setError(fetchError.message || "Error al cargar los productos");
-    } finally {
-      setLoadingProductos(false);
-    }
-  }, []);
+    },
+    [currentUser]
+  );
 
   const fetchEmprendimientoById = useCallback(
     async (emprendimientoId) => {
@@ -121,7 +140,7 @@ export default function Profile({ user, onProfileLoaded }) {
           `${API_BASE_URL}/api/entrepreneurship/${emprendimientoId}`,
           {
             headers: {
-              ...getAuthHeaders(),
+              ...getAuthHeaders(currentUser),
             },
           }
         );
@@ -145,7 +164,7 @@ export default function Profile({ user, onProfileLoaded }) {
         return null;
       }
     },
-    [fetchProductos]
+    [currentUser, fetchProductos]
   );
 
   const loadProfile = useCallback(
@@ -153,14 +172,25 @@ export default function Profile({ user, onProfileLoaded }) {
       setLoadingProfile(true);
       setError("");
       try {
+        const authToken = getStoredToken(currentUser || baseUserData);
         const response = await fetch(
           `${API_BASE_URL}/api/user/profile/${userId}`,
           {
             headers: {
-              ...getAuthHeaders(),
+              ...getAuthHeaders(currentUser || baseUserData),
             },
           }
         );
+
+        if (response.status === 401 || response.status === 403) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          localStorage.removeItem("isAuthenticated");
+          setError("Tu sesión expiró. Inicia sesión nuevamente.");
+          navigate("/login");
+          return;
+        }
+
         if (!response.ok) {
           throw new Error("No se pudo obtener la información del perfil");
         }
@@ -203,7 +233,7 @@ export default function Profile({ user, onProfileLoaded }) {
           emprendimiento: normalizedEmprendimiento,
         };
 
-        const updatedUser = { ...baseUser, profile: updatedProfile };
+        const updatedUser = { ...baseUser, token: authToken, profile: updatedProfile };
         localStorage.setItem("user", JSON.stringify(updatedUser));
         setCurrentUser(updatedUser);
         onProfileLoaded?.(updatedUser);
@@ -214,7 +244,7 @@ export default function Profile({ user, onProfileLoaded }) {
         setLoadingProfile(false);
       }
     },
-    [fetchProductos, fetchEmprendimientoById, onProfileLoaded]
+    [currentUser, fetchProductos, fetchEmprendimientoById, onProfileLoaded, navigate]
   );
 
   useEffect(() => {
@@ -349,9 +379,9 @@ export default function Profile({ user, onProfileLoaded }) {
 
       const response = await fetch(endpoint, {
         method,
-         headers: {
+        headers: {
           "Content-Type": "application/json",
-          ...getAuthHeaders(),
+          ...getAuthHeaders(currentUser),
         },
         body: JSON.stringify(payload),
       });
@@ -425,7 +455,7 @@ export default function Profile({ user, onProfileLoaded }) {
         method,
         headers: {
           "Content-Type": "application/json",
-          ...getAuthHeaders(),
+          ...getAuthHeaders(currentUser),
         },
         body: JSON.stringify(payload),
       });
@@ -488,7 +518,7 @@ export default function Profile({ user, onProfileLoaded }) {
         {
           method: "DELETE",
           headers: {
-            ...getAuthHeaders(),
+            ...getAuthHeaders(currentUser),
           },
         }
       );
@@ -530,7 +560,7 @@ export default function Profile({ user, onProfileLoaded }) {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            ...getAuthHeaders(),
+            ...getAuthHeaders(currentUser),
           },
           body: JSON.stringify({
             nombres: datos.nombres?.trim(),
