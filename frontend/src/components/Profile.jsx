@@ -96,6 +96,7 @@ export default function Profile({ user, onProfileLoaded }) {
   const currentUserRef = useRef(currentUser);
   const lastLoadedUserIdRef = useRef(null);
   const lastNotifiedUserIdRef = useRef(null);
+  const lastReceivedUserIdRef = useRef(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingProductos, setLoadingProductos] = useState(false);
   const [error, setError] = useState("");
@@ -263,6 +264,19 @@ export default function Profile({ user, onProfileLoaded }) {
       lastNotifiedUserIdRef.current = null;
     }
   }, [currentUser]);
+
+  useEffect(() => {
+    const incomingUserId = getUserId(user);
+
+    if (incomingUserId && lastReceivedUserIdRef.current !== incomingUserId) {
+      lastLoadedUserIdRef.current = null;
+      lastReceivedUserIdRef.current = incomingUserId;
+
+      if (user?.profile?.emprendimiento) {
+        setEmprendimiento(normalizeEmprendimiento(user.profile.emprendimiento));
+      }
+    }
+  }, [user]);
 
   useEffect(() => {
     const storedRaw = localStorage.getItem("user");
