@@ -7,6 +7,7 @@ import EntrepreneurshipForm from "./EntrepreneurshipForm";
 import logoVerde from "../images/logoVerde.png";
 import { API_BASE_URL } from "../utils/api";
 const PROFILE_PLACEHOLDER = logoVerde;
+const EMPRENDIMIENTO_CACHE_KEY = "emprendimientoCache";
 
 const getStoredToken = (userData) => {
   const localToken = localStorage.getItem("token");
@@ -52,6 +53,34 @@ const normalizeProducto = (producto) => ({
   categoria: producto?.categoria ?? producto?.Categoria,
 });
 
+const readCachedEmprendimientos = () => {
+  try {
+    const raw = localStorage.getItem(EMPRENDIMIENTO_CACHE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    console.error("No se pudo leer el cache de emprendimientos", e);
+    return {};
+  }
+};
+
+const getCachedEmprendimiento = (userId) => {
+  if (!userId) return null;
+  const cache = readCachedEmprendimientos();
+  return cache?.[userId] || null;
+};
+
+const saveCachedEmprendimiento = (userId, emprendimiento) => {
+  if (!userId || !emprendimiento) return;
+
+  try {
+    const cache = readCachedEmprendimientos();
+    cache[userId] = emprendimiento;
+    localStorage.setItem(EMPRENDIMIENTO_CACHE_KEY, JSON.stringify(cache));
+  } catch (e) {
+    console.error("No se pudo guardar el cache de emprendimientos", e);
+  }
+};
+
 const normalizeEmprendimiento = (data = {}) => ({
   id_emprendimiento:
     data.id_emprendimiento ||
@@ -85,7 +114,12 @@ export default function Profile({ user, onProfileLoaded }) {
     const stored = user || localStorage.getItem("user");
     const parsed = typeof stored === "string" ? JSON.parse(stored) : stored;
     const rawEmpr = parsed?.profile?.emprendimiento || parsed?.profile;
-    return rawEmpr ? normalizeEmprendimiento(rawEmpr) : {};
+    const cached = getCachedEmprendimiento(getUserId(parsed));
+
+    if (rawEmpr) return normalizeEmprendimiento(rawEmpr);
+    if (cached) return normalizeEmprendimiento(cached);
+
+    return {};
   });
   const [productos, setProductos] = useState([]);
   const [currentUser, setCurrentUser] = useState(() => {
@@ -206,6 +240,7 @@ export default function Profile({ user, onProfileLoaded }) {
             profileData.emprendimiento
           );
           setEmprendimiento(normalizedEmprendimiento);
+          saveCachedEmprendimiento(userId, normalizedEmprendimiento);
 
           if (normalizedEmprendimiento?.id_emprendimiento) {
             await fetchProductos(normalizedEmprendimiento.id_emprendimiento);
@@ -214,6 +249,9 @@ export default function Profile({ user, onProfileLoaded }) {
           normalizedEmprendimiento = await fetchEmprendimientoById(
             profileData.id_emprendimiento
           );
+          if (normalizedEmprendimiento) {
+            saveCachedEmprendimiento(userId, normalizedEmprendimiento);
+          }
         } else {
           const storedFallback =
             currentUser?.profile?.emprendimiento || emprendimiento;
@@ -223,6 +261,16 @@ export default function Profile({ user, onProfileLoaded }) {
             setEmprendimiento(storedFallback);
             await fetchProductos(storedFallback.id_emprendimiento);
           } else {
+            const cached = getCachedEmprendimiento(userId);
+            if (cached?.id_emprendimiento) {
+              const normalizedCache = normalizeEmprendimiento(cached);
+              setEmprendimiento(normalizedCache);
+              await fetchProductos(normalizedCache.id_emprendimiento);
+              normalizedEmprendimiento = normalizedCache;
+            }
+          }
+
+          if (!normalizedEmprendimiento) {
             setEmprendimiento({});
             setProductos([]);
           }
@@ -244,6 +292,7 @@ export default function Profile({ user, onProfileLoaded }) {
         };
 
         const updatedUser = { ...baseUser, token: authToken, profile: updatedProfile };
+        saveCachedEmprendimiento(getUserId(updatedUser), normalizedEmprendimiento);
         localStorage.setItem("user", JSON.stringify(updatedUser));
         setCurrentUser(updatedUser);
       } catch (profileError) {

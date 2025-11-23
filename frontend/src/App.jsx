@@ -45,6 +45,7 @@ export default function App() {
     localStorage.removeItem("user");
     localStorage.removeItem("isAuthenticated");
     localStorage.removeItem("token");
+    localStorage.removeItem("emprendimientoCache");
     setCurrentUser(null);
   }, []);
 
