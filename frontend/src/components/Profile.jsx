@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ProductCard from "./Card";
 import ProductForm from "./ProductForm";
@@ -93,41 +93,39 @@ export default function Profile({ user, onProfileLoaded }) {
     const stored = localStorage.getItem("user");
     return stored ? JSON.parse(stored) : null;
   });
+  const currentUserRef = useRef(currentUser);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingProductos, setLoadingProductos] = useState(false);
   const [error, setError] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
 
-  const fetchProductos = useCallback(
-    async (emprendimientoId) => {
-      setLoadingProductos(true);
-      try {
-        const response = await fetch(
-          `${API_BASE_URL}/api/products?emprendimiento_id=${emprendimientoId}`,
-          {
-            headers: {
-              ...getAuthHeaders(currentUser),
-            },
-          }
-        );
-        if (!response.ok) {
-          throw new Error("No se pudieron obtener los productos");
+  const fetchProductos = useCallback(async (emprendimientoId) => {
+    setLoadingProductos(true);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/products?emprendimiento_id=${emprendimientoId}`,
+        {
+          headers: {
+            ...getAuthHeaders(currentUserRef.current),
+          },
         }
-        const data = await response.json();
-        const productosNormalizados = (data.productos || []).map((p) =>
-          normalizeProducto(p)
-        );
-        setProductos(productosNormalizados);
-      } catch (fetchError) {
-        console.error("Error cargando productos:", fetchError);
-        setError(fetchError.message || "Error al cargar los productos");
-      } finally {
-        setLoadingProductos(false);
+      );
+      if (!response.ok) {
+        throw new Error("No se pudieron obtener los productos");
       }
-    },
-    [currentUser]
-  );
+      const data = await response.json();
+      const productosNormalizados = (data.productos || []).map((p) =>
+        normalizeProducto(p)
+      );
+      setProductos(productosNormalizados);
+    } catch (fetchError) {
+      console.error("Error cargando productos:", fetchError);
+      setError(fetchError.message || "Error al cargar los productos");
+    } finally {
+      setLoadingProductos(false);
+    }
+  }, []);
 
   const fetchEmprendimientoById = useCallback(
     async (emprendimientoId) => {
@@ -138,7 +136,7 @@ export default function Profile({ user, onProfileLoaded }) {
           `${API_BASE_URL}/api/entrepreneurship/${emprendimientoId}`,
           {
             headers: {
-              ...getAuthHeaders(currentUser),
+              ...getAuthHeaders(currentUserRef.current),
             },
           }
         );
@@ -162,7 +160,7 @@ export default function Profile({ user, onProfileLoaded }) {
         return null;
       }
     },
-    [currentUser, fetchProductos]
+    [fetchProductos]
   );
 
   const loadProfile = useCallback(
@@ -170,12 +168,13 @@ export default function Profile({ user, onProfileLoaded }) {
       setLoadingProfile(true);
       setError("");
       try {
-        const authToken = getStoredToken(currentUser || baseUserData);
+        const authSource = currentUserRef.current || baseUserData;
+        const authToken = getStoredToken(authSource);
         const response = await fetch(
           `${API_BASE_URL}/api/user/profile/${userId}`,
           {
             headers: {
-              ...getAuthHeaders(currentUser || baseUserData),
+              ...getAuthHeaders(authSource),
             },
           }
         );
@@ -250,8 +249,12 @@ export default function Profile({ user, onProfileLoaded }) {
         setLoadingProfile(false);
       }
     },
-    [currentUser, fetchProductos, fetchEmprendimientoById, navigate]
+    [fetchProductos, fetchEmprendimientoById, navigate]
   );
+
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+  }, [currentUser]);
 
   useEffect(() => {
     const storedRaw = localStorage.getItem("user");
