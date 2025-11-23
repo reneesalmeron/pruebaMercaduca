@@ -73,7 +73,13 @@ export default function App() {
         <Route
           path="/perfil"
           element={
-            <Profile user={currentUser} onProfileLoader={handleProfileLoaded} />
+            <Profile user={currentUser} onProfileLoaded={handleProfileLoaded} />
+          }
+        />
+        <Route
+          path="/perfil/producto/nuevo"
+          element={
+            <Profile user={currentUser} onProfileLoaded={handleProfileLoaded} />
           }
         />
         <Route path="/registrar" element={<Register />} />
