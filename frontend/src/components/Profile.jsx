@@ -95,6 +95,7 @@ export default function Profile({ user, onProfileLoaded }) {
   });
   const currentUserRef = useRef(currentUser);
   const lastLoadedUserIdRef = useRef(null);
+  const lastNotifiedUserIdRef = useRef(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingProductos, setLoadingProductos] = useState(false);
   const [error, setError] = useState("");
@@ -258,6 +259,12 @@ export default function Profile({ user, onProfileLoaded }) {
   }, [currentUser]);
 
   useEffect(() => {
+    if (!currentUser) {
+      lastNotifiedUserIdRef.current = null;
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
     const storedRaw = localStorage.getItem("user");
     const storedUser = user || (storedRaw ? JSON.parse(storedRaw) : null);
     const storedUserId = getUserId(storedUser);
@@ -287,7 +294,13 @@ export default function Profile({ user, onProfileLoaded }) {
 
   useEffect(() => {
     if (currentUser && onProfileLoaded) {
-      onProfileLoaded(currentUser);
+      const userId = getUserId(currentUser);
+      if (!userId) return;
+
+      if (lastNotifiedUserIdRef.current !== userId) {
+        lastNotifiedUserIdRef.current = userId;
+        onProfileLoaded(currentUser);
+      }
     }
   }, [currentUser, onProfileLoaded]);
 
