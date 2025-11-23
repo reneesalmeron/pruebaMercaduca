@@ -265,7 +265,7 @@ export default function Profile({ user, onProfileLoaded }) {
 
     setCurrentUser(storedUser);
     loadProfile(storedUserId, storedUser);
-  }, []);
+  }, [user, navigate, loadProfile]);
 
   useEffect(() => {
     if (location.pathname.includes("/perfil/producto/nuevo")) {
