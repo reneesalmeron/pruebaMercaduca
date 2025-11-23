@@ -121,7 +121,12 @@ export default function Profile({ user, onProfileLoaded }) {
 
     return {};
   });
-  const [productos, setProductos] = useState([]);
+  const [productos, setProductos] = useState(() => {
+    const stored = user || localStorage.getItem("user");
+    const parsed = typeof stored === "string" ? JSON.parse(stored) : stored;
+    const storedProductos = parsed?.profile?.productos || [];
+    return storedProductos.map(normalizeProducto);
+  });
   const [currentUser, setCurrentUser] = useState(() => {
     if (user) return user;
     const stored = localStorage.getItem("user");
@@ -137,32 +142,50 @@ export default function Profile({ user, onProfileLoaded }) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const fetchProductos = useCallback(async (emprendimientoId) => {
-    setLoadingProductos(true);
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/products?emprendimiento_id=${emprendimientoId}`,
-        {
-          headers: {
-            ...getAuthHeaders(currentUserRef.current),
-          },
-        }
-      );
-      if (!response.ok) {
-        throw new Error("No se pudieron obtener los productos");
-      }
-      const data = await response.json();
-      const productosNormalizados = (data.productos || []).map((p) =>
-        normalizeProducto(p)
-      );
-      setProductos(productosNormalizados);
-    } catch (fetchError) {
-      console.error("Error cargando productos:", fetchError);
-      setError(fetchError.message || "Error al cargar los productos");
-    } finally {
-      setLoadingProductos(false);
-    }
+  const updateStoredUserProfile = useCallback((profileUpdater) => {
+    setCurrentUser((prev) => {
+      if (!prev) return prev;
+
+      const updatedProfile = profileUpdater(prev.profile || {});
+      const mergedUser = { ...prev, profile: updatedProfile };
+      localStorage.setItem("user", JSON.stringify(mergedUser));
+      return mergedUser;
+    });
   }, []);
+
+  const fetchProductos = useCallback(
+    async (emprendimientoId) => {
+      setLoadingProductos(true);
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/products?emprendimiento_id=${emprendimientoId}`,
+          {
+            headers: {
+              ...getAuthHeaders(currentUserRef.current),
+            },
+          }
+        );
+        if (!response.ok) {
+          throw new Error("No se pudieron obtener los productos");
+        }
+        const data = await response.json();
+        const productosNormalizados = (data.productos || []).map((p) =>
+          normalizeProducto(p)
+        );
+        setProductos(productosNormalizados);
+        updateStoredUserProfile((prevProfile) => ({
+          ...prevProfile,
+          productos: productosNormalizados,
+        }));
+      } catch (fetchError) {
+        console.error("Error cargando productos:", fetchError);
+        setError(fetchError.message || "Error al cargar los productos");
+      } finally {
+        setLoadingProductos(false);
+      }
+    },
+    [updateStoredUserProfile]
+  );
 
   const fetchEmprendimientoById = useCallback(
     async (emprendimientoId) => {
@@ -231,6 +254,15 @@ export default function Profile({ user, onProfileLoaded }) {
 
         const payload = await response.json();
         const profileData = payload.profile || payload;
+
+        if (Array.isArray(profileData?.productos) && profileData.productos.length) {
+          const normalizedProductos = profileData.productos.map(normalizeProducto);
+          setProductos(normalizedProductos);
+          updateStoredUserProfile((prevProfile) => ({
+            ...prevProfile,
+            productos: normalizedProductos,
+          }));
+        }
 
         let normalizedEmprendimiento = null;
 
@@ -301,7 +333,7 @@ export default function Profile({ user, onProfileLoaded }) {
         setLoadingProfile(false);
       }
     },
-    [fetchProductos, fetchEmprendimientoById, navigate]
+    [fetchProductos, fetchEmprendimientoById, navigate, updateStoredUserProfile]
   );
 
   useEffect(() => {
