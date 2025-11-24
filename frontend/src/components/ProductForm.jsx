@@ -178,7 +178,7 @@ export default function ProductForm({
               type="submit"
               className="w-full bg-gradient-to-r from-[#557051] to-[#6B8E5E] text-white rounded-xl py-3.5 text-sm font-semibold hover:from-[#496345] hover:to-[#5A7750] transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0"
             >
-              {producto ? "Actualizar Producto" : "Publicar Producto"}
+              {producto ? "Guardar cambios" : "Publicar Producto"}
             </button>
 
             {producto && onDelete && (

@@ -976,13 +976,12 @@ export default function Profile({ user, onProfileLoaded }) {
           ) : (
             <div className="grid grid-cols-3 gap-1 md:gap-7 mt-4">
               {productos.map((p) => (
-                <div
+                <ProductCard
                   key={p.id}
+                  p={p}
+                  disableLink
                   onClick={() => handleEditar(p)}
-                  className="aspect-square cursor-pointer hover:opacity-90 transition-opacity"
-                >
-                  <ProductCard p={p} />
-                </div>
+                />
               ))}
             </div>
           )}
