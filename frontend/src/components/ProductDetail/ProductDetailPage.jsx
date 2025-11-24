@@ -2,7 +2,6 @@ import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Carousel from "../Carousel";
 import ProductHeader from "./ProductHeader";
-import { API_BASE_URL } from "../../utils/api";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -17,7 +16,9 @@ export default function ProductDetailPage() {
         setLoading(true);
 
         // 1. Obtener el producto
-        const productRes = await fetch(`${API_BASE_URL}/api/products/${id}`);
+        const productRes = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/products/${id}`
+        );
         if (!productRes.ok) throw new Error("No se pudo obtener el producto");
         const productData = await productRes.json();
         const producto = productData.producto;
@@ -27,7 +28,7 @@ export default function ProductDetailPage() {
         // 2. Obtener el emprendimiento usando el id_emprendimiento del producto
         if (producto.id_emprendimiento) {
           const emprendimientoRes = await fetch(
-            `${API_BASE_URL}/api/entrepreneurship/${producto.id_emprendimiento}`
+            `${import.meta.env.VITE_API_URL}/api/entrepreneurship/${producto.id_emprendimiento}`
           );
           if (emprendimientoRes.ok) {
             const emprendimientoData = await emprendimientoRes.json();

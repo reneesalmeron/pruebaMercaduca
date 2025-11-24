@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import Card from "./Card";
-import { API_BASE_URL } from "../utils/api";
 
 export default function Emprendedores({ onGoHome }) {
   const [emprendimientos, setEmprendimientos] = useState([]);
@@ -11,7 +10,7 @@ export default function Emprendedores({ onGoHome }) {
   const fetchEmprendimientos = async () => {
     try {
       setError(null);
-      const response = await fetch(`${API_BASE_URL}/api/entrepreneurship`);
+      const response = await fetch("http://localhost:5000/api/entrepreneurship");
       if (!response.ok) throw new Error("Error al cargar los emprendimientos");
       const data = await response.json();
 

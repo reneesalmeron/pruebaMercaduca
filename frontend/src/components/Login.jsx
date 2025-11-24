@@ -1,44 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import chicaFondoLogin from "../images/chicaFondoLogin.png";
-import { API_BASE_URL } from "../utils/api";
 
-const EMPRENDIMIENTO_CACHE_KEY = "emprendimientoCache";
-
-const getUserId = (data) =>
-  data?.id || data?.id_usuario || data?.userId || data?.idUser || null;
-
-const normalizeProducto = (producto) => ({
-  id: producto?.id ?? producto?.id_producto,
-  nombre: producto?.nombre ?? producto?.Nombre ?? "",
-  descripcion: producto?.descripcion ?? producto?.Descripcion ?? "",
-  precio: producto?.precio ?? producto?.precio_dolares ?? producto?.Precio_dolares ?? 0,
-  imagen:
-    producto?.imagen ||
-    producto?.imagen_url ||
-    producto?.Imagen_URL ||
-    producto?.Imagen_url ||
-    "",
-  id_categoria: producto?.id_categoria ?? null,
-  stock: producto?.stock ?? producto?.existencias ?? producto?.Existencias ?? 0,
-  disponible: producto?.disponible ?? producto?.Disponible ?? true,
-  id_emprendimiento:
-    producto?.emprendimiento_id ?? producto?.id_emprendimiento ?? null,
-  categoria: producto?.categoria ?? producto?.Categoria,
-});
-
-const saveCachedEmprendimiento = (userId, emprendimiento) => {
-  if (!userId || !emprendimiento) return;
-
-  try {
-    const raw = localStorage.getItem(EMPRENDIMIENTO_CACHE_KEY);
-    const cache = raw ? JSON.parse(raw) : {};
-    cache[userId] = emprendimiento;
-    localStorage.setItem(EMPRENDIMIENTO_CACHE_KEY, JSON.stringify(cache));
-  } catch (e) {
-    console.error("No se pudo guardar el cache de emprendimientos", e);
-  }
-};
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const Login = ({ onLoginSuccess }) => {
   const [formData, setFormData] = useState({
@@ -58,12 +23,11 @@ const Login = ({ onLoginSuccess }) => {
 
   const handleLoginSuccess = async (user, token) => {
     // Guardar información del usuario en localStorage
-    const initialUserId = getUserId(user);
-    let enrichedUser = { ...user, id: initialUserId, token };
+    let enrichedUser = user;
 
     try {
       const profileResponse = await fetch(
-        `${API_BASE_URL}/api/user/profile/${initialUserId}`,
+        `${API_BASE_URL}/api/user/profile/${user.id}`,
         {
           headers: {
             Authorization: token ? `Bearer ${token}` : undefined,
@@ -77,50 +41,19 @@ const Login = ({ onLoginSuccess }) => {
 
       const profilePayload = await profileResponse.json();
       const profileData = profilePayload.profile || profilePayload;
-      const emprendimiento = profileData.emprendimiento;
-      const emprendimientoId =
-        emprendimiento?.id_emprendimiento || emprendimiento?.id;
-      const profileUserId = initialUserId || getUserId(profileData);
 
-      let productos = [];
-
-      if (emprendimientoId) {
-        try {
-          const productosResponse = await fetch(
-            `${API_BASE_URL}/api/products?emprendimiento_id=${emprendimientoId}`,
-            {
-              headers: {
-                Authorization: token ? `Bearer ${token}` : undefined,
-              },
-            }
-          );
-
-          if (productosResponse.ok) {
-            const productosPayload = await productosResponse.json();
-            productos = (productosPayload.productos || []).map(normalizeProducto);
-          }
-        } catch (productosError) {
-          console.error("No se pudieron obtener los productos al iniciar sesión", productosError);
-        }
-      }
-
-      enrichedUser = {
-        ...user,
-        id: profileUserId,
-        token,
-        profile: { ...profileData, productos },
-      };
-
-      if (emprendimiento && profileUserId) {
-        saveCachedEmprendimiento(profileUserId, emprendimiento);
-      }
+      enrichedUser = { ...user, profile: profileData };
     } catch (profileError) {
       console.error("Error al obtener el perfil del usuario:", profileError);
     }
 
-    localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(enrichedUser));
     localStorage.setItem("isAuthenticated", "true");
+
+    // Guardar token si viene en la respuesta
+    if (enrichedUser.token) {
+      localStorage.setItem("token", enrichedUser.token);
+    }
 
     // Ejecutar el callback proporcionado por el padre (si existe)
     if (onLoginSuccess) {
@@ -137,7 +70,7 @@ const Login = ({ onLoginSuccess }) => {
     setError("");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/logIn`, {
+      const response = await fetch("http://localhost:5000/api/auth/logIn", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -157,12 +90,16 @@ const Login = ({ onLoginSuccess }) => {
       if (data.success) {
         const { user, token } = data; // Recibimos user y token
 
-        const userId = getUserId(user);
-        if (!user || !userId) {
+        // Guardar token y usuario en localStorage
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("isAuthenticated", "true");
+
+        if (!user || !user.id) {
           throw new Error("El usuario no tiene ID en la respuesta");
         }
 
-        await handleLoginSuccess({ ...user, id: userId }, token);
+        handleLoginSuccess(user);
       } else {
         throw new Error(data.message || "Error en el login");
       }

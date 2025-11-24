@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import useCategories from "../hooks/useCategories";
 
 export default function EntrepreneurshipForm({
   visible,
@@ -7,16 +6,13 @@ export default function EntrepreneurshipForm({
   initialData = {},
   onSubmit,
   loading = false,
-  errorMessage = "",
 }) {
   const [formData, setFormData] = useState({
     nombre: "",
     descripcion: "",
     imagen_url: "",
     instagram: "",
-    id_categoria: "",
   });
-  const { categories } = useCategories();
 
   useEffect(() => {
     if (initialData) {
@@ -25,8 +21,6 @@ export default function EntrepreneurshipForm({
         descripcion: initialData.descripcion || initialData.Descripcion || "",
         imagen_url: initialData.imagen_url || initialData.Imagen_URL || "",
         instagram: initialData.instagram || initialData.Instagram || "",
-        id_categoria:
-          initialData.id_categoria || initialData.emprendimiento_id_categoria || "",
       });
     }
   }, [initialData]);
@@ -71,12 +65,6 @@ export default function EntrepreneurshipForm({
             Completa la información de tu emprendimiento. El nombre es obligatorio.
           </p>
 
-          {errorMessage && (
-            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              {errorMessage}
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1">
               <label className="block text-sm font-semibold text-gray-800">Nombre *</label>
@@ -101,26 +89,6 @@ export default function EntrepreneurshipForm({
                 className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#557051] resize-none"
                 placeholder="¿Qué ofreces?"
               />
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-sm font-semibold text-gray-800">
-                Categoría
-              </label>
-              <select
-                name="id_categoria"
-                value={formData.id_categoria}
-                onChange={handleChange}
-                required
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#557051]"
-              >
-                <option value="">Selecciona una categoría</option>
-                {categories.map((categoria) => (
-                  <option key={categoria.id_categoria} value={categoria.id_categoria}>
-                    {categoria.categoria}
-                  </option>
-                ))}
-              </select>
             </div>
 
             <div className="space-y-1">
