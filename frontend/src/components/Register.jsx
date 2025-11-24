@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { API_BASE_URL } from "../utils/api";
 
 const Register = ({ onRegisterSuccess, switchToLogin }) => {
   const [formData, setFormData] = useState({
@@ -22,7 +21,7 @@ const Register = ({ onRegisterSuccess, switchToLogin }) => {
   const navigate = useNavigate();
 
   // URL base del backend
-  const AUTH_BASE_URL = `${API_BASE_URL}/api/auth`;
+  const API_BASE_URL = "http://localhost:5000/api/auth";
 
   const handleRegisterSuccess = () => {
 
@@ -49,7 +48,7 @@ const Register = ({ onRegisterSuccess, switchToLogin }) => {
   // Función para registrar usuario con fetch
   const registerUser = async (userData) => {
     try {
-      const response = await fetch(`${AUTH_BASE_URL}/signUp`, {
+      const response = await fetch(`${API_BASE_URL}/signUp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -78,7 +77,7 @@ const Register = ({ onRegisterSuccess, switchToLogin }) => {
 
     try {
       const response = await fetch(
-        `${AUTH_BASE_URL}/check-username/${username}`
+        `${API_BASE_URL}/check-username/${username}`
       );
       const data = await response.json();
 

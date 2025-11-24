@@ -1,6 +1,5 @@
 // src/hooks/useEmprendimiento.js
 import { useEffect, useState } from "react";
-import { API_BASE_URL } from "../utils/api";
 
 export function useEmprendimiento(id) {
   const [emprendimiento, setEmprendimiento] = useState(null);
@@ -10,7 +9,7 @@ export function useEmprendimiento(id) {
   useEffect(() => {
     if (!id) return;
 
-    fetch(`${API_BASE_URL}/api/entrepreneurship/${id}`)
+    fetch(`${import.meta.env.VITE_API_URL}/api/entrepreneurship/${id}`)
       .then((res) => {
         if (!res.ok) throw new Error("No se pudo obtener el emprendimiento");
         return res.json();

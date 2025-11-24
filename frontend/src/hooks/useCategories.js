@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { API_BASE_URL } from "../utils/api";
 
 export default function useCategories(availableOnly) {
   const [categories, setCategories] = useState([]);
@@ -15,7 +14,7 @@ export default function useCategories(availableOnly) {
         setLoading(true);
         setError(null);
 
-        const baseUrl = `${API_BASE_URL}/api/categories`;
+        const baseUrl = "http://localhost:5000/api/categories";
         const url = availableOnly ? `${baseUrl}?available=true` : baseUrl;
 
         const res = await fetch(url, { signal: controller.signal });
