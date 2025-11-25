@@ -18,6 +18,7 @@ export default function EditProfile({
     nuevaContraseña: "",
     confirmarContraseña: "",
   });
+  const [localError, setLocalError] = useState("");
   const inputClass =
     "w-full bg-gray-50 text-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#557051] focus:bg-white border border-gray-200 transition-all";
 
@@ -39,13 +40,32 @@ export default function EditProfile({
     }
   }, [emprendimientoData]);
 
+  useEffect(() => {
+    if (visible) {
+      setLocalError("");
+    }
+  }, [visible]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
+    if (name === "nuevaContraseña" || name === "confirmarContraseña") {
+      setLocalError("");
+    }
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (
+      (formData.nuevaContraseña || formData.confirmarContraseña) &&
+      formData.nuevaContraseña !== formData.confirmarContraseña
+    ) {
+      setLocalError("Las contraseñas no coinciden.");
+      return;
+    }
+
+    setLocalError("");
     const success = await onSave?.(formData);
     if (success !== false) {
       onClose?.();
@@ -78,9 +98,9 @@ export default function EditProfile({
             Editar Perfil
           </h2>
 
-          {errorMessage && (
+          {(errorMessage || localError) && (
             <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
-              {errorMessage}
+              {localError || errorMessage}
             </div>
           )}
 
