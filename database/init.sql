@@ -24,8 +24,8 @@ CREATE TABLE Emprendedor (
   id_emprendimiento INT,
   Nombres VARCHAR(500),
   Apellidos VARCHAR(500),
-  -- Correo TEXT UNIQUE,
-  -- Telefono VARCHAR(8) UNIQUE,
+  Correo TEXT UNIQUE,
+  Telefono VARCHAR(8) UNIQUE,
   Activo BOOLEAN DEFAULT TRUE,
   Fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT fk_Emprendedor_Emprendimiento FOREIGN KEY (id_emprendimiento)

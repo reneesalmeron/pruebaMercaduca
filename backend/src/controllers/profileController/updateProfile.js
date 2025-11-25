@@ -31,7 +31,7 @@ export const updateProfile = async (req, res) => {
 
     //  Lógica de Cambio de Contraseña
     if (nuevaPassword) {
-      // Si existe una fecha previa, validamos los 30 días
+      // Si existe una fecha previa, validamos los 15 días
       if (ultimoCambio) {
         const fechaUltimoCambio = new Date(ultimoCambio);
         const fechaActual = new Date();
@@ -39,10 +39,10 @@ export const updateProfile = async (req, res) => {
         const diferenciaDias =
           (fechaActual - fechaUltimoCambio) / (1000 * 60 * 60 * 24);
 
-        if (diferenciaDias < 30) {
+        if (diferenciaDias < 15) {
           await client.query("ROLLBACK");
           return res.status(400).json({
-            error: `Debes esperar ${Math.ceil(30 - diferenciaDias)} días más para cambiar tu contraseña.`,
+            error: `Debes esperar ${Math.ceil(15 - diferenciaDias)} días más para cambiar tu contraseña.`,
           });
         }
       }
