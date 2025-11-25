@@ -15,9 +15,6 @@ export default function EntrepreneurshipForm({
     imagen_url: "",
     instagram: "",
     id_categoria: "",
-    username: "",
-    nuevaContraseña: "",
-    confirmarContraseña: "",
   });
   const { categories } = useCategories();
 
@@ -30,9 +27,6 @@ export default function EntrepreneurshipForm({
         instagram: initialData.instagram || initialData.Instagram || "",
         id_categoria:
           initialData.id_categoria || initialData.emprendimiento_id_categoria || "",
-        username: initialData.username || initialData.Usuario || "",
-        nuevaContraseña: "",
-        confirmarContraseña: "",
       });
     }
   }, [initialData]);
@@ -77,7 +71,7 @@ export default function EntrepreneurshipForm({
             {initialData?.id_emprendimiento ? "Editar emprendimiento" : "Crear emprendimiento"}
           </h2>
           <p className="text-sm text-gray-600 mb-6 text-center">
-            Completa la información de tu emprendimiento y tus datos de acceso.
+            Completa la información de tu emprendimiento para comenzar a compartir tus productos.
           </p>
 
           {errorMessage && (
@@ -154,42 +148,6 @@ export default function EntrepreneurshipForm({
                 className={inputClass}
                 placeholder="@usuario o enlace"
               />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="block text-sm font-semibold text-gray-800">Usuario</label>
-                <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleChange}
-                  className={inputClass}
-                  placeholder="Usuario de acceso"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="block text-sm font-semibold text-gray-800">Nueva contraseña</label>
-                <input
-                  type="password"
-                  name="nuevaContraseña"
-                  value={formData.nuevaContraseña}
-                  onChange={handleChange}
-                  className={inputClass}
-                  placeholder="Actualiza tu contraseña"
-                />
-              </div>
-              <div className="space-y-1 sm:col-span-2">
-                <label className="block text-sm font-semibold text-gray-800">Confirmar contraseña</label>
-                <input
-                  type="password"
-                  name="confirmarContraseña"
-                  value={formData.confirmarContraseña}
-                  onChange={handleChange}
-                  className={inputClass}
-                  placeholder="Repite la nueva contraseña"
-                />
-              </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-2">

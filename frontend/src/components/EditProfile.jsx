@@ -14,6 +14,9 @@ export default function EditProfile({
     apellidos: "",
     correo: "",
     telefono: "",
+    username: "",
+    nuevaContraseña: "",
+    confirmarContraseña: "",
   });
   const inputClass =
     "w-full bg-gray-50 text-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#557051] focus:bg-white border border-gray-200 transition-all";
@@ -25,6 +28,13 @@ export default function EditProfile({
         apellidos: emprendimientoData.apellidos || "",
         correo: emprendimientoData.correo || "",
         telefono: emprendimientoData.telefono || "",
+        username:
+          emprendimientoData.username ||
+          emprendimientoData.Usuario ||
+          emprendimientoData.usuario ||
+          "",
+        nuevaContraseña: "",
+        confirmarContraseña: "",
       });
     }
   }, [emprendimientoData]);
@@ -129,6 +139,49 @@ export default function EditProfile({
                 maxLength="8"
                 className={inputClass}
               />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-sm font-semibold text-zinc-700 mb-2">
+                Usuario de acceso
+              </label>
+              <input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                className={inputClass}
+                placeholder="Nombre de usuario"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="block text-sm font-semibold text-zinc-700 mb-2">
+                  Nueva contraseña
+                </label>
+                <input
+                  type="password"
+                  name="nuevaContraseña"
+                  value={formData.nuevaContraseña}
+                  onChange={handleChange}
+                  className={inputClass}
+                  placeholder="Actualizar contraseña"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm font-semibold text-zinc-700 mb-2">
+                  Confirmar contraseña
+                </label>
+                <input
+                  type="password"
+                  name="confirmarContraseña"
+                  value={formData.confirmarContraseña}
+                  onChange={handleChange}
+                  className={inputClass}
+                  placeholder="Repite la nueva contraseña"
+                />
+              </div>
             </div>
 
             <div className="flex gap-3 pt-4">

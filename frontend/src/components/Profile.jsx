@@ -433,14 +433,14 @@ export default function Profile({ user, onProfileLoaded }) {
   const profileDataForForm = {
     ...(currentUser?.profile || {}),
     ...(emprendimiento || {}),
-  };
-  const entrepreneurshipFormData = {
-    ...emprendimiento,
     username:
       currentUser?.profile?.username ||
       currentUser?.username ||
       currentUser?.profile?.Usuario ||
       "",
+  };
+  const entrepreneurshipFormData = {
+    ...emprendimiento,
   };
   const instagramValue = emprendimiento?.instagram || "";
   const instagramHref = instagramValue
@@ -586,63 +586,9 @@ export default function Profile({ user, onProfileLoaded }) {
       return;
     }
 
-    if (data.nuevaContraseña && data.nuevaContraseña !== data.confirmarContraseña) {
-      setError("Las contraseñas no coinciden.");
-      return;
-    }
-
     try {
       setSavingEntrepreneurship(true);
       setError("");
-
-      const usernameActual =
-        data.username?.trim() ||
-        currentUser?.username ||
-        currentUser?.profile?.username ||
-        currentUser?.profile?.Usuario ||
-        "";
-
-      if (userId && (data.nuevaContraseña || usernameActual)) {
-        const perfilPayload = {
-          nombres: currentUser?.profile?.nombres || emprendimiento?.nombres || "",
-          apellidos: currentUser?.profile?.apellidos || emprendimiento?.apellidos || "",
-          correo: currentUser?.profile?.correo || emprendimiento?.correo || "",
-          telefono: currentUser?.profile?.telefono || emprendimiento?.telefono || "",
-          username: usernameActual,
-          nuevaContraseña: data.nuevaContraseña?.trim() || undefined,
-        };
-
-        const perfilResponse = await fetch(
-          `${API_BASE_URL}/api/user/profile/${userId}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              ...getAuthHeaders(currentUser),
-            },
-            body: JSON.stringify(perfilPayload),
-          }
-        );
-
-        const perfilResult = await perfilResponse.json();
-
-        if (!perfilResponse.ok) {
-          throw new Error(
-            perfilResult.error || "No se pudo actualizar el usuario"
-          );
-        }
-
-        setCurrentUser((prevUser) => {
-          if (!prevUser) return prevUser;
-          const updatedProfile = {
-            ...(prevUser.profile || {}),
-            username: usernameActual,
-          };
-          const merged = { ...prevUser, username: usernameActual, profile: updatedProfile };
-          localStorage.setItem("user", JSON.stringify(merged));
-          return merged;
-        });
-      }
 
       const endpoint = emprendimiento?.id_emprendimiento
         ? `${API_BASE_URL}/api/entrepreneurship/${emprendimiento.id_emprendimiento}`
@@ -758,6 +704,14 @@ export default function Profile({ user, onProfileLoaded }) {
     }
 
     try {
+      if (
+        datos.nuevaContraseña &&
+        datos.nuevaContraseña !== datos.confirmarContraseña
+      ) {
+        setError("Las contraseñas no coinciden.");
+        return false;
+      }
+
       setSavingProfile(true);
       setError("");
 
@@ -775,9 +729,11 @@ export default function Profile({ user, onProfileLoaded }) {
             correo: datos.correo?.trim(),
             telefono: datos.telefono?.trim(),
             username:
+              datos.username?.trim() ||
               currentUser?.username ||
               currentUser?.profile?.username ||
               currentUser?.profile?.Usuario,
+            nuevaContraseña: datos.nuevaContraseña?.trim() || undefined,
           }),
         }
       );
@@ -797,9 +753,17 @@ export default function Profile({ user, onProfileLoaded }) {
           apellidos: datos.apellidos?.trim() ?? prevUser.profile?.apellidos,
           correo: datos.correo?.trim() ?? prevUser.profile?.correo,
           telefono: datos.telefono?.trim() ?? prevUser.profile?.telefono,
+          username:
+            datos.username?.trim() ??
+            prevUser.profile?.username ??
+            prevUser.profile?.Usuario,
         };
 
-        const mergedUser = { ...prevUser, profile: updatedProfile };
+        const mergedUser = {
+          ...prevUser,
+          username: updatedProfile.username || prevUser.username,
+          profile: updatedProfile,
+        };
         localStorage.setItem("user", JSON.stringify(mergedUser));
         return mergedUser;
       });
