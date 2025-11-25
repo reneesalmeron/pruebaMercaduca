@@ -155,7 +155,8 @@ const Register = ({ onRegisterSuccess, switchToLogin }) => {
     return (
       areAllFieldsFilled() &&
       doPasswordsMatch() &&
-      passwordStrength.score >= 3 &&
+      // Comentado temporalmente para no limitar los registros por la fuerza de la contraseña
+      // passwordStrength.score >= 3 &&
       usernameAvailable !== false
     );
   };
@@ -213,12 +214,13 @@ const Register = ({ onRegisterSuccess, switchToLogin }) => {
       return;
     }
 
-    if (passwordStrength.score < 3) {
-      setError(
-        "La contraseña no cumple con los requisitos de seguridad mínimos"
-      );
-      return;
-    }
+    // Comentado temporalmente para no limitar los registros por la fuerza de la contraseña
+    // if (passwordStrength.score < 3) {
+    //   setError(
+    //     "La contraseña no cumple con los requisitos de seguridad mínimos"
+    //   );
+    //   return;
+    // }
 
     if (
       !formData.nombres ||
