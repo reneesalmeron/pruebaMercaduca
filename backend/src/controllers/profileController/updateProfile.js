@@ -1,5 +1,4 @@
 import pool from "../../database/connection.js";
-import bcrypt from "bcrypt";
 import { generateHash } from "../../utils/hash/generateHash.js";
 
 export const updateProfile = async (req, res) => {
@@ -38,7 +37,7 @@ export const updateProfile = async (req, res) => {
         }
       }
 
-      const hashedPassword = generateHash(nuevaContraseña);
+      const hashedPassword = await generateHash(nuevaContraseña);
 
       await client.query(
         `UPDATE Usuarios 
