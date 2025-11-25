@@ -434,6 +434,14 @@ export default function Profile({ user, onProfileLoaded }) {
     ...(currentUser?.profile || {}),
     ...(emprendimiento || {}),
   };
+  const entrepreneurshipFormData = {
+    ...emprendimiento,
+    username:
+      currentUser?.profile?.username ||
+      currentUser?.username ||
+      currentUser?.profile?.Usuario ||
+      "",
+  };
   const instagramValue = emprendimiento?.instagram || "";
   const instagramHref = instagramValue
     ? instagramValue.startsWith("http")
@@ -475,10 +483,9 @@ export default function Profile({ user, onProfileLoaded }) {
     }
   };
 
-  const handleEditar = (producto) => {
+  const handleEditar = () => {
     setError("");
-    setProductoEdit(producto);
-    setShowModal(true);
+    setShowEntrepreneurshipModal(true);
   };
 
   const handleSubmit = async (data) => {
@@ -579,9 +586,63 @@ export default function Profile({ user, onProfileLoaded }) {
       return;
     }
 
+    if (data.nuevaContraseña && data.nuevaContraseña !== data.confirmarContraseña) {
+      setError("Las contraseñas no coinciden.");
+      return;
+    }
+
     try {
       setSavingEntrepreneurship(true);
       setError("");
+
+      const usernameActual =
+        data.username?.trim() ||
+        currentUser?.username ||
+        currentUser?.profile?.username ||
+        currentUser?.profile?.Usuario ||
+        "";
+
+      if (userId && (data.nuevaContraseña || usernameActual)) {
+        const perfilPayload = {
+          nombres: currentUser?.profile?.nombres || emprendimiento?.nombres || "",
+          apellidos: currentUser?.profile?.apellidos || emprendimiento?.apellidos || "",
+          correo: currentUser?.profile?.correo || emprendimiento?.correo || "",
+          telefono: currentUser?.profile?.telefono || emprendimiento?.telefono || "",
+          username: usernameActual,
+          nuevaContraseña: data.nuevaContraseña?.trim() || undefined,
+        };
+
+        const perfilResponse = await fetch(
+          `${API_BASE_URL}/api/user/profile/${userId}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              ...getAuthHeaders(currentUser),
+            },
+            body: JSON.stringify(perfilPayload),
+          }
+        );
+
+        const perfilResult = await perfilResponse.json();
+
+        if (!perfilResponse.ok) {
+          throw new Error(
+            perfilResult.error || "No se pudo actualizar el usuario"
+          );
+        }
+
+        setCurrentUser((prevUser) => {
+          if (!prevUser) return prevUser;
+          const updatedProfile = {
+            ...(prevUser.profile || {}),
+            username: usernameActual,
+          };
+          const merged = { ...prevUser, username: usernameActual, profile: updatedProfile };
+          localStorage.setItem("user", JSON.stringify(merged));
+          return merged;
+        });
+      }
 
       const endpoint = emprendimiento?.id_emprendimiento
         ? `${API_BASE_URL}/api/entrepreneurship/${emprendimiento.id_emprendimiento}`
@@ -979,7 +1040,7 @@ export default function Profile({ user, onProfileLoaded }) {
                 <div key={p.id} className="aspect-square">
                   <ProductCard
                     p={p}
-                    onClick={() => handleEditar(p)}
+                    onClick={handleEditar}
                     disableLink
                   />
                 </div>
@@ -1015,7 +1076,7 @@ export default function Profile({ user, onProfileLoaded }) {
           setShowEntrepreneurshipModal(false);
           setError("");
         }}
-        initialData={emprendimiento}
+        initialData={entrepreneurshipFormData}
         onSubmit={handleSaveEntrepreneurship}
         loading={savingEntrepreneurship}
         errorMessage={error}

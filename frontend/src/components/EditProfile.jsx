@@ -15,6 +15,8 @@ export default function EditProfile({
     correo: "",
     telefono: "",
   });
+  const inputClass =
+    "w-full bg-gray-50 text-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#557051] focus:bg-white border border-gray-200 transition-all";
 
   useEffect(() => {
     if (emprendimientoData) {
@@ -83,7 +85,7 @@ export default function EditProfile({
                 value={formData.nombres}
                 onChange={handleChange}
                 required
-                className="w-full bg-zinc-50 text-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#557051] focus:bg-white border-0 transition-all"
+                className={inputClass}
               />
             </div>
 
@@ -97,7 +99,7 @@ export default function EditProfile({
                 value={formData.apellidos}
                 onChange={handleChange}
                 required
-                className="w-full bg-zinc-50 text-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#557051] focus:bg-white border-0 transition-all"
+                className={inputClass}
               />
             </div>
 
@@ -111,7 +113,7 @@ export default function EditProfile({
                 value={formData.correo}
                 onChange={handleChange}
                 required
-                className="w-full bg-zinc-50 text-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#557051] focus:bg-white border-0 transition-all"
+                className={inputClass}
               />
             </div>
 
@@ -125,7 +127,7 @@ export default function EditProfile({
                 value={formData.telefono}
                 onChange={handleChange}
                 maxLength="8"
-                className="w-full bg-zinc-50 text-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#557051] focus:bg-white border-0 transition-all"
+                className={inputClass}
               />
             </div>
 
