@@ -21,14 +21,14 @@ CREATE TABLE Emprendimiento (
 -- Crear la tabla Emprendedor
 CREATE TABLE Emprendedor (
   id_emprendedor SERIAL PRIMARY KEY NOT NULL,
-	id_emprendimiento INT,
+  id_emprendimiento INT,
   Nombres VARCHAR(500),
   Apellidos VARCHAR(500),
-  Correo TEXT UNIQUE,
-  Telefono VARCHAR(8) UNIQUE,
-	Activo BOOLEAN DEFAULT TRUE,
+  -- Correo TEXT UNIQUE,
+  -- Telefono VARCHAR(8) UNIQUE,
+  Activo BOOLEAN DEFAULT TRUE,
   Fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	CONSTRAINT fk_Emprendedor_Emprendimiento FOREIGN KEY (id_emprendimiento) 
+        CONSTRAINT fk_Emprendedor_Emprendimiento FOREIGN KEY (id_emprendimiento)
     REFERENCES Emprendimiento(id_emprendimiento) ON DELETE CASCADE
 );
 
