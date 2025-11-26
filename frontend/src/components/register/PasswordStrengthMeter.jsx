@@ -1,8 +1,23 @@
-import {
-  getPasswordStrengthColor,
-  getPasswordStrengthText,
-  getPasswordStrengthTextColor,
-} from "../../utils/password";
+const getPasswordStrengthColor = (score) => {
+  if (score === 0) return "bg-transparent";
+  if (score <= 2) return "bg-red-500";
+  if (score <= 3) return "bg-yellow-500";
+  return "bg-green-500";
+};
+
+const getPasswordStrengthText = (score) => {
+  if (score === 0) return "";
+  if (score <= 2) return "Débil";
+  if (score <= 3) return "Media";
+  return "Fuerte";
+};
+
+const getPasswordStrengthTextColor = (score) => {
+  if (score === 0) return "text-gray-500";
+  if (score <= 2) return "text-red-600";
+  if (score <= 3) return "text-yellow-600";
+  return "text-green-600";
+};
 
 const PasswordStrengthMeter = ({ password, passwordStrength }) => {
   if (!password) return null;

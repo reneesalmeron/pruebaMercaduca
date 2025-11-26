@@ -3,15 +3,64 @@ import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../utils/api";
 import CredentialsSection from "./register/CredentialsSection";
 import PersonalInfoSection from "./register/PersonalInfoSection";
-import {
-  evaluatePasswordStrength,
-} from "../utils/password";
-import {
-  doPasswordsMatch,
-  isEmailValid,
-  isPhoneValid,
-  isRegisterFormValid,
-} from "../utils/formValidation";
+
+const evaluatePasswordStrength = (password) => {
+  const feedback = [];
+  let score = 0;
+
+  if (password.length >= 8) {
+    score += 1;
+  } else {
+    feedback.push("Mínimo 8 caracteres");
+  }
+
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) {
+    score += 1;
+  } else {
+    feedback.push("Mayúsculas y minúsculas");
+  }
+
+  if (/\d/.test(password)) {
+    score += 1;
+  } else {
+    feedback.push("Al menos un número");
+  }
+
+  if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    score += 1;
+  } else {
+    feedback.push("Al menos un carácter especial (!@#$% etc.)");
+  }
+
+  if (password.length >= 12) {
+    score += 1;
+  }
+
+  return { score, feedback };
+};
+
+const areAllFieldsFilled = (formData) =>
+  formData.username.trim() !== "" &&
+  formData.password.trim() !== "" &&
+  formData.confirmPassword.trim() !== "" &&
+  formData.nombres.trim() !== "" &&
+  formData.apellidos.trim() !== "" &&
+  formData.correo.trim() !== "" &&
+  formData.telefono.trim() !== "";
+
+const doPasswordsMatch = (password, confirmPassword) =>
+  password === confirmPassword && password !== "";
+
+const isEmailValid = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+const isPhoneValid = (phone) => /^\d{8}$/.test(phone);
+
+const isRegisterFormValid = (formData, usernameAvailable, passwordStrength) =>
+  areAllFieldsFilled(formData) &&
+  doPasswordsMatch(formData.password, formData.confirmPassword) &&
+  // Comentado temporalmente para no limitar los registros por la fuerza de la contraseña
+  // passwordStrength.score >= 3 &&
+  usernameAvailable !== false;
 
 const Register = ({ onRegisterSuccess, switchToLogin }) => {
   const [formData, setFormData] = useState({
